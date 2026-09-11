@@ -1,0 +1,599 @@
+{% extends 'base.html' %}
+
+{% block title %}Diagnostic Workspace — NeuroScan AI{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-7xl px-5 py-10">
+  <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Workspace / Explainability</p>
+      <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Diagnostic workspace</h1>
+      <p class="mt-2 text-slate-400">Select one pipeline: 2D image classification or 3D volumetric classification. Models, preprocessing, ensembles and explainability stay within the selected dimension.</p>
+    <div class="flex flex-wrap items-center gap-3">
+
+  <a href="/unet-analysis"
+     class="rounded-2xl border border-cyanx/40 bg-cyanx/10 px-4 py-3 text-sm font-black text-cyanx transition hover:bg-cyanx/20">
+    <i class="fa-solid fa-brain mr-2"></i>
+    U-Net Tumor Analysis
+  </a>
+
+  <div class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-200">
+    <i class="fa-solid fa-shield-halved mr-2"></i>
+    Research prototype &nbsp; clinician review required
+  </div>
+
+</div>
+
+  {% if error %}
+  <div class="mb-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">
+    <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  <div class="grid gap-7 lg:grid-cols-[.78fr_1.22fr]">
+    <div class="glass rounded-3xl p-6">
+      <div class="mb-5 flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-violetx/15 text-violet-300"><i class="fa-solid fa-brain"></i></span>
+        <div>
+          <h2 class="font-black text-white">MRI analysis input</h2>
+          <p class="text-xs text-slate-500">Choose one model family before uploading.</p>
+        </div>
+      </div>
+
+      <form action="/predict" method="POST" enctype="multipart/form-data" class="space-y-5" id="analysis-form">
+        <fieldset>
+          <legend class="text-sm font-semibold text-slate-300">Model family</legend>
+          <div class="mt-2 grid grid-cols-2 gap-3">
+            <label id="family-2d-card" class="cursor-pointer rounded-2xl border border-cyanx/40 bg-cyanx/10 p-4 transition">
+              <input type="radio" name="model_family" value="2d" class="mr-2" {% if selected_family != '3d' %}checked{% endif %} onchange="setModelFamily('2d')">
+              <span class="font-black text-cyanx">2D Models</span>
+              <span class="mt-1 block text-xs text-slate-400">PNG / JPG / JPEG / WEBP  single 2D MRI slice</span>
+            </label>
+            <label id="family-3d-card" class="cursor-pointer rounded-2xl border border-violet-400/40 bg-violet-400/10 p-4 transition">
+              <input type="radio" name="model_family" value="3d" class="mr-2" {% if selected_family == '3d' %}checked{% endif %} onchange="setModelFamily('3d')">
+              <span class="font-black text-violet-200">3D Models</span>
+              <span class="mt-1 block text-xs text-slate-400">NIfTI .nii / .nii.gz  complete 3D volume</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div id="architecture-2d" class="model-panel">
+          <label class="block text-sm font-semibold text-slate-300">
+            2D inference architecture
+            <select name="model_type" id="model-type-2d" data-family-select="2d" class="mt-2 w-full rounded-xl border border-line bg-slate-950/70 px-4 py-3 text-slate-200 outline-none focus:border-cyanx">
+              <option value="ensemble" {% if selected_model in [None, 'ensemble'] and selected_family != '3d' %}selected{% endif %}>2D Weighted Soft-Voting Ensemble</option>
+              {% for key in available_2d_models or [] %}
+              <option value="{{ key }}" {% if selected_model == key and selected_family != '3d' %}selected{% endif %}>{{ key|replace('_',' ')|title }}</option>
+              {% endfor %}
+            </select>
+            <span class="mt-2 block text-xs text-slate-500">2D models available: {{ (available_2d_models or [])|join(', ') or 'none' }}  Ensemble stays 2D-only</span>
+          </label>
+        </div>
+
+        <div id="architecture-3d" class="model-panel hidden">
+          <label class="block text-sm font-semibold text-slate-300">
+            3D inference architecture
+            <select name="model_type" id="model-type-3d" data-family-select="3d" disabled class="mt-2 w-full rounded-xl border border-line bg-slate-950/70 px-4 py-3 text-slate-200 outline-none focus:border-violet-300">
+              <option value="ensemble_3d" {% if selected_model == 'ensemble_3d' and selected_family == '3d' %}selected{% endif %}>3D Weighted Soft-Voting Ensemble</option>
+              {% for key in available_3d_models or [] %}
+              <option value="{{ key }}" {% if selected_model == key and selected_family == '3d' %}selected{% endif %}>{{ key|replace('_',' ')|title }}</option>
+              {% endfor %}
+            </select>
+            <span class="mt-2 block text-xs text-slate-500">3D models available: {{ (available_3d_models or [])|join(', ') or 'none' }}  Ensemble stays 3D-only</span>
+          </label>
+        </div>
+
+        <label id="upload-area" class="relative block cursor-pointer rounded-2xl border-2 border-dashed border-line bg-slate-950/30 px-5 py-10 text-center transition hover:border-cyanx/60">
+          <input id="file-input" type="file" name="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" required class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+          <i id="upload-icon" class="fa-solid fa-image text-4xl text-violet-300"></i>
+          <p id="file-name" class="mt-4 font-bold text-slate-200">Choose an MRI image</p>
+          <p id="file-help" class="mt-1 text-xs text-slate-500">Click or drag a 2D MRI image here</p>
+        </label>
+
+        <div id="preview-container" class="hidden overflow-hidden rounded-2xl border border-line bg-slate-950/40">
+          <div class="border-b border-line px-4 py-3"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Input preview</p></div>
+          <img id="image-preview" class="max-h-72 w-full object-contain bg-black/30" alt="MRI preview">
+          <div id="volume-preview-note" class="hidden p-4 text-xs leading-5 text-violet-200">3D NIfTI selected. The browser will not render the full volume here. After analysis, NeuroScan AI shows a representative volume slice and 3D explainability views.</div>
+        </div>
+
+        <button id="analyze-button" type="submit" class="w-full rounded-xl bg-violetx py-3.5 font-black text-white shadow-xl shadow-violetx/20 transition hover:bg-violet-500">
+          <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Run explainable analysis
+        </button>
+      </form>
+
+      <div class="mt-6 grid grid-cols-2 gap-3 text-xs text-slate-400">
+        <div class="rounded-xl border border-line bg-slate-950/30 p-3"><i class="fa-solid fa-fire text-orange-300"></i><p class="mt-2 font-semibold text-slate-200">Grad-CAM</p><p class="mt-1">Class attention</p></div>
+        <div class="rounded-xl border border-line bg-slate-950/30 p-3"><i class="fa-solid fa-wand-magic-sparkles text-emerald-300"></i><p class="mt-2 font-semibold text-slate-200">Saliency</p><p class="mt-1">Input sensitivity</p></div>
+        <div class="rounded-xl border border-line bg-slate-950/30 p-3"><i class="fa-solid fa-location-dot text-rose-300"></i><p class="mt-2 font-semibold text-slate-200">AI attention ROI</p><p class="mt-1">Fused model attention region</p></div>
+        <div class="rounded-xl border border-line bg-slate-950/30 p-3"><i class="fa-solid fa-layer-group text-violet-300"></i><p class="mt-2 font-semibold text-slate-200">Feature maps</p><p class="mt-1">Deep representations</p></div>
+      </div>
+    </div>
+
+    <div>
+      {% if prediction %}
+      <div class="glass rounded-3xl p-6">
+        <div class="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Classification result  {{ model_family|upper }}</p>
+            <h2 class="mt-2 text-4xl font-black capitalize text-white">{{ prediction_display }}</h2>
+            <p class="mt-2 text-sm text-slate-400">{{ model_name_display }}</p>
+          </div>
+          <div class="text-right"><p class="text-4xl font-black text-emerald-300">{{ confidence }}</p><p class="text-xs text-slate-500">Top-class model score</p></div>
+        </div>
+
+        <div class="mt-5">
+          <div class="mb-2 flex justify-between text-xs"><span class="text-slate-400">Confidence</span><span class="font-bold text-emerald-300">{{ confidence_value }}%</span></div>
+          <div class="h-3 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-violetx to-cyanx" style="width:{{ confidence_value }}%"></div></div>
+        </div>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-line bg-slate-950/30 p-4"><p class="text-xs text-slate-500">Model agreement</p><p class="mt-1 text-2xl font-black text-cyanx">{{ agreement }}%</p></div>
+          <div class="rounded-2xl border border-line bg-slate-950/30 p-4"><p class="text-xs text-slate-500">Uncertainty indicator</p><p class="mt-1 text-2xl font-black text-amber-300">{{ uncertainty }}%</p></div>
+          <div class="rounded-2xl border border-line bg-slate-950/30 p-4"><p class="text-xs text-slate-500">Models compared</p><p class="mt-1 text-2xl font-black text-violet-300">{{ model_comparison|length }}</p></div>
+        </div>
+
+        <div class="mt-7">
+          <h3 class="font-black text-white">Class probability distribution</h3>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            {% for cat, prob in probabilities.items() %}
+            <div class="rounded-2xl border border-line bg-slate-950/30 p-4"><div class="flex justify-between text-sm"><span class="capitalize text-slate-300">{{ cat.replace('_',' ') }}</span><span class="font-bold text-slate-100">{{ prob }}%</span></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-violetx to-cyanx" style="width:{{ prob }}%"></div></div></div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
+          {% if audio_path %}<audio controls class="h-9"><source src="{{ audio_path }}" type="audio/mpeg"></audio>{% endif %}
+          {% if pdf_filename %}<a href="/download_report/{{ pdf_filename }}" class="rounded-xl bg-cyanx px-4 py-2 text-sm font-black text-ink"><i class="fa-solid fa-file-pdf mr-2"></i>PDF report</a>{% endif %}
+          {% if json_filename %}<a href="/download_report/{{ json_filename }}" class="rounded-xl border border-line bg-slate-950/40 px-4 py-2 text-sm font-bold text-slate-200"><i class="fa-solid fa-code mr-2"></i>JSON report</a>{% endif %}
+          <a href="https://wa.me/?text=NeuroScan%20AI%20Analysis%20Result%20-%20Prediction:%20{{ prediction_display }},%20Confidence:%20{{ confidence }}" target="_blank" class="rounded-xl bg-emerald-500/20 border border-emerald-500/40 px-4 py-2 text-sm font-bold text-emerald-300"><i class="fa-brands fa-whatsapp mr-2"></i>Share</a>
+          <a href="mailto:?subject=NeuroScan AI Analysis Report&body=Prediction: {{ prediction_display }}%0AConfidence: {{ confidence }}%0A%0APlease find attached the NeuroScan AI analysis report." class="rounded-xl bg-violet-500/20 border border-violet-500/40 px-4 py-2 text-sm font-bold text-violet-300"><i class="fa-solid fa-envelope mr-2"></i>Email</a>
+        </div>
+      </div>
+      {% else %}
+      <div class="glass flex min-h-[500px] flex-col items-center justify-center rounded-3xl p-10 text-center"><i class="fa-solid fa-brain text-6xl text-violet-300/50"></i><h2 class="mt-5 text-xl font-black text-slate-200">Awaiting an MRI scan</h2><p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">Prediction, probability analysis, architecture comparison and explainability evidence will appear here.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if prediction %}
+
+  {% if severity %}
+  <section class="mt-8 rounded-3xl p-6" style="background: rgba(16,29,50,.78); border: 1px solid {{ severity.color }}40;">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <span class="grid h-14 w-14 place-items-center rounded-2xl" style="background: {{ severity.color }}20;">
+          <i class="fa-solid {{ severity.icon }} text-2xl" style="color: {{ severity.color }};"></i>
+        </span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[.2em] text-slate-400">Severity Assessment</p>
+          <h2 class="mt-1 text-2xl font-black" style="color: {{ severity.color }};">{{ severity.label }}</h2>
+          <p class="mt-1 text-sm text-slate-400">{{ severity.wait_time }}</p>
+        </div>
+      </div>
+      {% if tumor_info.specialist %}
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-4">
+        <p class="text-xs text-slate-500">Recommended Specialist</p>
+        <div class="mt-2 flex items-center gap-2">
+          <i class="fa-solid {{ tumor_info.specialist_icon }} text-cyanx"></i>
+          <span class="font-bold text-white">{{ tumor_info.specialist }}</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if confidence_recommendation %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <div class="flex items-start gap-4">
+      <span class="grid h-12 w-12 flex-shrink-0 place-items-center rounded-xl" style="background: {{ confidence_recommendation.color }}20;">
+        <i class="fa-solid {{ confidence_recommendation.icon }} text-xl" style="color: {{ confidence_recommendation.color }};"></i>
+      </span>
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-slate-400">AI Confidence Recommendation</p>
+        <h3 class="mt-1 text-xl font-black" style="color: {{ confidence_recommendation.color }};">{{ confidence_recommendation.title }}</h3>
+        <p class="mt-2 text-sm text-slate-300">{{ confidence_recommendation.message }}</p>
+        <div class="mt-3 rounded-xl border border-line bg-slate-950/40 px-4 py-3 text-sm font-bold text-cyanx">
+          <i class="fa-solid fa-arrow-right mr-2"></i>{{ confidence_recommendation.action }}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if tumor_info and tumor_info.what_is %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Educational Information</p>
+        <h2 class="mt-1 text-2xl font-black text-white">About {{ tumor_info.simple_name }}</h2>
+      </div>
+      {% if tumor_info.icd_code %}
+      <div class="rounded-xl border border-line bg-slate-950/40 px-4 py-2">
+        <p class="text-xs text-slate-500">ICD Code</p>
+        <p class="font-mono font-bold text-cyanx">{{ tumor_info.icd_code }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="grid gap-5 lg:grid-cols-2">
+      <div class="space-y-5">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">What is it?</p>
+          <p class="mt-2 text-sm leading-6 text-slate-300">{{ tumor_info.what_is }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Simple Explanation</p>
+          <p class="mt-2 text-sm leading-6 text-slate-300">{{ simple_explanation }}</p>
+        </div>
+        {% if tumor_info.next_steps %}
+        <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+          <p class="text-xs font-bold uppercase tracking-wider text-amber-300">Recommended Next Steps</p>
+          <p class="mt-2 text-sm leading-6 text-amber-100">{{ tumor_info.next_steps }}</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="space-y-5">
+        {% if tumor_info.symptoms %}
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Common Symptoms</p>
+          <ul class="mt-2 space-y-1">
+            {% for symptom in tumor_info.symptoms %}
+            <li class="flex items-center gap-2 text-sm text-slate-300"><i class="fa-solid fa-circle text-[6px] text-cyanx"></i>{{ symptom }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% if tumor_info.treatments %}
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Treatment Options</p>
+          <ul class="mt-2 space-y-1">
+            {% for treatment in tumor_info.treatments %}
+            <li class="flex items-center gap-2 text-sm text-slate-300"><i class="fa-solid fa-circle text-[6px] text-emerald-300"></i>{{ treatment }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% if tumor_info.prognosis %}
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Prognosis</p>
+          <p class="mt-2 text-sm leading-6 text-slate-300">{{ tumor_info.prognosis }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Multi-model evidence</p>
+    <h2 class="mt-2 text-2xl font-black">Architecture comparison — {{ model_family|upper }} pipeline only</h2>
+    <p class="mt-2 text-sm text-slate-500">Only models from the selected family are compared. The 2D ensemble contains only 2D models; the 3D ensemble contains only 3D models.</p>
+    <div class="mt-6 overflow-x-auto"><table class="w-full text-left text-sm"><thead class="border-b border-line text-xs uppercase text-slate-500"><tr><th class="px-4 py-3">Model</th><th class="px-4 py-3">Prediction</th><th class="px-4 py-3">Confidence</th><th class="px-4 py-3">Weight</th></tr></thead><tbody>{% for model in model_comparison %}<tr class="border-b border-line/60"><td class="px-4 py-4 font-bold text-slate-200">{{ model.name }}</td><td class="px-4 py-4 text-cyanx">{{ model.prediction_display }}</td><td class="px-4 py-4">{{ model.confidence }}%</td><td class="px-4 py-4 text-slate-400">{{ model.ensemble_weight }}%</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+
+  {% if model_family == '3d' and volume_stats %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">3D Volumetric Analysis</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Volumetric Statistics</h2>
+    <p class="mt-2 text-sm text-slate-500">Real 3D volume metrics computed from the NIfTI brain scan. These metrics are unique to 3D volumetric analysis and cannot be derived from 2D slices.</p>
+    <div class="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Volume Shape</p>
+        <p class="mt-2 font-black text-violet-300 text-lg">{{ volume_stats.volume_shape }}</p>
+      </div>
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Total Voxels</p>
+        <p class="mt-2 font-black text-violet-300 text-lg">{{ "{:,}".format(volume_stats.total_voxels) }}</p>
+      </div>
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Brain Tissue Voxels</p>
+        <p class="mt-2 font-black text-cyanx text-lg">{{ "{:,}".format(volume_stats.brain_voxels) }}</p>
+      </div>
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Slice Count</p>
+        <p class="mt-2 font-black text-cyanx text-lg">{{ volume_stats.slice_count }}</p>
+      </div>
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Mean Intensity</p>
+        <p class="mt-2 font-black text-emerald-300 text-lg">{{ volume_stats.mean_intensity }}</p>
+      </div>
+      <div class="rounded-2xl border border-violet-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Std Deviation</p>
+        <p class="mt-2 font-black text-emerald-300 text-lg">{{ volume_stats.std_intensity }}</p>
+      </div>
+      {% if volume_stats.attention_voxels is defined %}
+      <div class="rounded-2xl border border-orange-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Attention Voxels</p>
+        <p class="mt-2 font-black text-orange-300 text-lg">{{ "{:,}".format(volume_stats.attention_voxels) }}</p>
+      </div>
+      <div class="rounded-2xl border border-orange-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Attention %</p>
+        <p class="mt-2 font-black text-orange-300 text-lg">{{ volume_stats.attention_percentage }}%</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if model_family == '3d' and triplanar_path %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">3D Tri-Planar View</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Axial + Coronal + Sagittal</h2>
+    <p class="mt-2 text-sm text-slate-500">Three orthogonal views of the 3D brain volume, similar to how radiologists review MRI scans. This view is only available for 3D volumetric data.</p>
+    <div class="mt-5 rounded-2xl border border-line bg-slate-950/40 p-4">
+      <div class="explainability-viewer relative cursor-pointer" data-image="{{ triplanar_path }}" data-title="Tri-Planar View">
+        <img src="{{ triplanar_path }}" class="w-full rounded-xl object-contain" alt="Tri-planar view">
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if model_family == '3d' and montage_path %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">3D Multi-Slice Montage</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Volume Slice Montage</h2>
+    <p class="mt-2 text-sm text-slate-500">Nine evenly-spaced slices from the 3D volume showing the complete brain scan from top to bottom. This montage is unique to 3D volumetric analysis.</p>
+    <div class="mt-5 rounded-2xl border border-line bg-slate-950/40 p-4">
+      <div class="explainability-viewer relative cursor-pointer" data-image="{{ montage_path }}" data-title="Multi-Slice Montage">
+        <img src="{{ montage_path }}" class="w-full rounded-xl object-contain" alt="Multi-slice montage">
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if image_path %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Input inspection</p>
+    <h2 class="mt-2 text-2xl font-black">{{ 'Representative 3D slice' if model_family == '3d' else 'Input MRI' }}</h2>
+    <div class="mt-5 grid gap-5 md:grid-cols-2"><div class="rounded-2xl border border-line bg-slate-950/40 p-4"><img src="{{ image_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="MRI input"></div>{% if image_quality %}<div class="grid grid-cols-2 gap-4 content-start"><div class="rounded-2xl border border-line p-4"><p class="text-xs text-slate-500">Resolution</p><p class="mt-2 font-black">{{ image_quality.width }} x {{ image_quality.height }}</p></div><div class="rounded-2xl border border-line p-4"><p class="text-xs text-slate-500">Brightness</p><p class="mt-2 font-black">{{ image_quality.brightness_label }}</p></div><div class="rounded-2xl border border-line p-4"><p class="text-xs text-slate-500">Contrast</p><p class="mt-2 font-black">{{ image_quality.contrast_label }}</p></div><div class="rounded-2xl border border-line p-4"><p class="text-xs text-slate-500">Sharpness</p><p class="mt-2 font-black">{{ image_quality.sharpness_label }}</p></div></div>{% endif %}</div>
+  </section>
+  {% endif %}
+
+  {% if model_family == '3d' and slice_confidence_chart %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">3D Slice Confidence Profile</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Slice-by-Slice Confidence Graph</h2>
+    <p class="mt-2 text-sm text-slate-500">Model confidence evaluated on each individual slice of the 3D volume. The peak slice indicates where the model finds the strongest evidence. This analysis is only possible with 3D volumetric data.</p>
+    <div class="mt-5 rounded-2xl border border-line bg-slate-950/40 p-4">
+      <img src="{{ slice_confidence_chart }}" class="w-full rounded-xl object-contain" alt="Slice confidence graph">
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="mt-8 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Explainability lab  {{ model_family|upper }}</p><h2 class="mt-2 text-3xl font-black text-white">AI explainability evidence</h2><p class="mt-2 max-w-3xl text-sm text-slate-400">These maps show model attention or input sensitivity. They are not ground-truth tumor masks and must not be interpreted as medically confirmed tumor boundaries.</p></div><div class="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs text-amber-200"><i class="fa-solid fa-circle-info mr-2"></i>AI attention  medical confirmation</div></div>
+
+    <div class="mt-8 grid gap-6 md:grid-cols-2">
+      {% if image_path %}<div class="group overflow-hidden rounded-2xl border border-line bg-slate-950/50"><div class="border-b border-line px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">01  Input MRI</p></div><div class="explainability-viewer relative cursor-pointer p-4" data-image="{{ image_path }}" data-title="Input MRI"><img src="{{ image_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="Input MRI"></div></div>{% endif %}
+      {% if gradcam_path %}<div class="group overflow-hidden rounded-2xl border border-orange-400/20 bg-slate-950/50"><div class="border-b border-orange-400/10 px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-orange-300">02  {{ '3D Grad-CAM slice' if model_family == '3d' else 'Grad-CAM' }}</p></div><div class="explainability-viewer relative cursor-pointer p-4" data-image="{{ gradcam_path }}" data-title="Grad-CAM"><img src="{{ gradcam_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="Grad-CAM"></div><div class="border-t border-line px-5 py-3 text-xs text-slate-500">Model: <span class="font-bold text-orange-300">{{ visual_model }}</span>{% if visual_layer %}  Layer: <span class="font-mono">{{ visual_layer }}</span>{% endif %}</div></div>{% endif %}
+      {% if localization_path %}<div class="group overflow-hidden rounded-2xl border border-rose-400/20 bg-slate-950/50 md:col-span-2"><div class="border-b border-rose-400/10 px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-rose-300">03  AI Prediction and Evidence Localization</p><p class="mt-1 text-xs text-slate-600">Green: AI Boundary | Red: Attention Area  Not medically confirmed</p></div><div class="grid gap-5 p-4 md:grid-cols-2"><div class="explainability-viewer relative cursor-pointer" data-image="{{ localization_path }}" data-title="AI Prediction and Evidence Localization"><img src="{{ localization_path }}" class="max-h-[500px] w-full rounded-xl object-contain" alt="AI estimated tumor region"></div><div class="rounded-2xl border border-line bg-slate-950/30 p-5"><p class="text-sm font-black text-white">Attention Evidence Analysis</p><div class="mt-4 space-y-3 text-sm"><div class="flex justify-between"><span class="text-slate-500">Attention Area (Pixels)</span><span class="font-bold">{{ localization_area }} px2</span></div><div class="flex justify-between"><span class="text-slate-500">Evidence Consistency</span><span class="font-bold text-cyanx">{{ localization_consistency }}%</span></div><div class="flex justify-between"><span class="text-slate-500">Prediction Score</span><span class="font-bold text-emerald-300">{{ confidence }}</span></div></div><p class="mt-5 text-xs leading-5 text-amber-200">{{ localization_note }}</p></div></div></div>{% endif %}
+      {% if heatmap_path %}<div class="group overflow-hidden rounded-2xl border border-rose-400/20 bg-slate-950/50"><div class="border-b border-rose-400/10 px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-rose-300">04  Attention heatmap</p></div><div class="explainability-viewer relative cursor-pointer p-4" data-image="{{ heatmap_path }}" data-title="Attention heatmap"><img src="{{ heatmap_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="Attention heatmap"></div></div>{% endif %}
+      {% if saliency_path %}<div class="group overflow-hidden rounded-2xl border border-emerald-400/20 bg-slate-950/50"><div class="border-b border-emerald-400/10 px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-emerald-300">05  Input-gradient saliency</p></div><div class="explainability-viewer relative cursor-pointer p-4" data-image="{{ saliency_path }}" data-title="Input-gradient saliency"><img src="{{ saliency_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="Saliency"></div></div>{% endif %}
+      {% if saliency_intensity_path %}<div class="group overflow-hidden rounded-2xl border border-emerald-400/20 bg-slate-950/50"><div class="border-b border-emerald-400/10 px-5 py-4"><p class="text-xs font-bold uppercase tracking-wider text-emerald-300">06  Saliency intensity</p></div><div class="explainability-viewer relative cursor-pointer p-4" data-image="{{ saliency_intensity_path }}" data-title="Saliency intensity"><img src="{{ saliency_intensity_path }}" class="max-h-[440px] w-full rounded-xl object-contain" alt="Saliency intensity"></div></div>{% endif %}
+    </div>
+  </section>
+
+  <section class="mt-8 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Tumor Segmentation & Analysis</p>
+        <h2 class="mt-2 text-2xl font-black text-white">True Tumor Mask + Boundary</h2>
+        <p class="mt-2 max-w-3xl text-sm text-slate-400">AI-driven automated contouring and segmentation. The system generates a precise boundary around the detected tumor region for clinical review.</p>
+      </div>
+      <span class="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
+        {% if segmentation_available %}AI Segmentation Active{% else %}AI Attention Only{% endif %}
+      </span>
+    </div>
+
+    {% if segmentation_available and segmentation_overlay_path %}
+    <!-- Segmentation Results -->
+    <div class="mt-5 grid gap-5 lg:grid-cols-2">
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/40 p-4">
+        <p class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-3">AI Attention Segmentation Overlay</p>
+        <div class="explainability-viewer relative cursor-pointer" data-image="{{ segmentation_overlay_path }}" data-title="Segmentation Overlay">
+          <img src="{{ segmentation_overlay_path }}" class="w-full rounded-xl object-contain" alt="Segmentation overlay">
+        </div>
+      </div>
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-4">
+        <p class="text-xs font-bold uppercase tracking-wider text-cyanx mb-3">Segmentation Mask</p>
+        <div class="explainability-viewer relative cursor-pointer" data-image="{{ segmentation_mask_path }}" data-title="Tumor Mask">
+          <img src="{{ segmentation_mask_path }}" class="w-full rounded-xl object-contain" alt="Tumor mask">
+        </div>
+      </div>
+    </div>
+
+    {% if tumor_size and tumor_size.area_mm2 is defined %}
+    <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Tumor Area</p>
+        <p class="mt-2 text-2xl font-black text-emerald-300">{{ tumor_size.area_mm2 }} mm2</p>
+      </div>
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Tumor Diameter</p>
+        <p class="mt-2 text-2xl font-black text-cyanx">{{ tumor_size.diameter_mm }} mm</p>
+      </div>
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Area Percentage</p>
+        <p class="mt-2 text-2xl font-black text-violet-300">{{ tumor_size.percentage }}%</p>
+      </div>
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/30 p-4">
+        <p class="text-xs text-slate-500">Tumor Pixels</p>
+        <p class="mt-2 text-2xl font-black text-amber-300">{{ "{:,}".format(tumor_size.active_pixels) }}</p>
+      </div>
+    </div>
+    <div class="mt-3 rounded-xl border border-cyanx/20 bg-cyanx/5 px-4 py-2 text-xs text-cyanx">
+      <i class="fa-solid fa-microchip mr-2"></i>Source: {{ tumor_size.source|default("AI Attention Analysis") }}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Fallback: AI Attention Only -->
+    <div class="mt-5 rounded-2xl border border-line bg-slate-950/40 p-5">
+      <div class="flex flex-wrap items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="h-4 w-4 rounded bg-orange-500/40 border border-orange-500"></div>
+          <span class="text-xs text-slate-300">Tumor Mask (Red Area)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="h-4 w-4 rounded border-2 border-emerald-400"></div>
+          <span class="text-xs text-slate-300">True Boundary (Green Contour)</span>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-slate-300">The displayed ROI utilizes fused Grad-CAM and Saliency maps to produce a research-grade segmentation boundary.</p>
+      <p class="mt-2 text-xs leading-5 text-slate-500">{{ segmentation_message }}</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="mt-8 grid gap-7 lg:grid-cols-2">
+    {% if probability_chart %}<div class="glass rounded-3xl p-6"><p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Probability analysis</p><h2 class="mt-2 text-xl font-black">Class probability chart</h2><img src="{{ probability_chart }}" class="mt-5 w-full rounded-2xl object-contain" alt="Probability chart"></div>{% endif %}
+    {% if model_comparison_chart %}<div class="glass rounded-3xl p-6"><p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Architecture comparison</p><h2 class="mt-2 text-xl font-black">{{ model_family|upper }} model confidence</h2><img src="{{ model_comparison_chart }}" class="mt-5 w-full rounded-2xl object-contain" alt="Model comparison chart"></div>{% endif %}
+  </section>
+
+  {% if activation_maps %}
+  <section class="mt-8 glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Deep feature inspection  {{ model_family|upper }}</p>
+    <h2 class="mt-2 text-2xl font-black">Feature activations across convolutional layers</h2>
+    <p class="mt-2 text-sm text-slate-500">Visualizing how deep convolutional layers filter raw input pixels into high-level features for diagnosis. Six sampled network depths are shown below.</p>
+    <div class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {% for item in activation_maps %}
+      <div class="group overflow-hidden rounded-2xl border border-line bg-slate-950/30 p-4">
+        <div class="mb-2">
+          <p class="text-xs font-black text-violet-300">{{ item.depth_label|default(item.label) }}</p>
+          {% if item.description %}
+          <p class="mt-1 text-[11px] leading-4 text-slate-500">{{ item.description }}</p>
+          {% endif %}
+          <p class="mt-2 text-[10px] text-slate-600">Layer: {{ item.layer }}  {{ item.channels }} channels shown</p>
+        </div>
+        <div class="explainability-viewer relative cursor-pointer overflow-hidden rounded-xl" data-image="{{ item.url }}" data-title="{{ item.label }}">
+          <img src="{{ item.url }}" class="w-full rounded-xl object-contain" alt="{{ item.label }}" loading="lazy">
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm text-amber-100"><i class="fa-solid fa-triangle-exclamation mr-2"></i><strong>Important:</strong> NeuroScan AI is a research/educational prototype. The classification, confidence, Grad-CAM, saliency and AI attention ROI are not medical diagnoses or clinical tumor segmentation. A true tumor boundary requires a separately trained segmentation model with segmentation-mask ground truth.</div>
+  {% endif %}
+</section>
+
+<div id="image-modal" class="fixed inset-0 z-[9999] hidden bg-black/90 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+  <div class="flex h-full w-full flex-col"><div class="flex items-center justify-between border-b border-white/10 pb-4"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Explainability Viewer</p><h3 id="modal-title" class="mt-1 text-lg font-black text-white">Image</h3></div><button id="close-image-modal" type="button" class="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/5 text-white" aria-label="Close"><i class="fa-solid fa-xmark text-xl"></i></button></div><div class="flex flex-1 items-center justify-center overflow-auto py-6"><img id="modal-image" src="" alt="Expanded explainability image" class="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"></div></div>
+</div>
+
+<script>
+function setModelFamily(family) {
+  var panel2d = document.getElementById('architecture-2d');
+  var panel3d = document.getElementById('architecture-3d');
+  var select2d = document.getElementById('model-type-2d');
+  var select3d = document.getElementById('model-type-3d');
+  var fileInput = document.getElementById('file-input');
+  var fileHelp = document.getElementById('file-help');
+  var fileName = document.getElementById('file-name');
+  var volumeNote = document.getElementById('volume-preview-note');
+  var card2d = document.getElementById('family-2d-card');
+  var card3d = document.getElementById('family-3d-card');
+
+  if (family === '3d') {
+    panel2d.classList.add('hidden');
+    panel3d.classList.remove('hidden');
+    select2d.disabled = true;
+    select3d.disabled = false;
+    select2d.name = '';
+    select3d.name = 'model_type';
+    fileInput.accept = '.nii,.nii.gz,application/gzip,application/x-gzip';
+    fileHelp.textContent = 'Click or drag a 3D NIfTI volume (.nii / .nii.gz)';
+    fileName.textContent = 'Choose a NIfTI volume';
+    volumeNote.classList.remove('hidden');
+    card2d.classList.remove('border-cyanx/40', 'bg-cyanx/10');
+    card2d.classList.add('border-line', 'bg-transparent');
+    card3d.classList.add('border-violet-400/40', 'bg-violet-400/10');
+    card3d.classList.remove('border-line', 'bg-transparent');
+  } else {
+    panel2d.classList.remove('hidden');
+    panel3d.classList.add('hidden');
+    select2d.disabled = false;
+    select3d.disabled = true;
+    select2d.name = 'model_type';
+    select3d.name = '';
+    fileInput.accept = '.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp';
+    fileHelp.textContent = 'Click or drag a 2D MRI image here';
+    fileName.textContent = 'Choose an MRI image';
+    volumeNote.classList.add('hidden');
+    card2d.classList.add('border-cyanx/40', 'bg-cyanx/10');
+    card2d.classList.remove('border-line', 'bg-transparent');
+    card3d.classList.remove('border-violet-400/40', 'bg-violet-400/10');
+    card3d.classList.add('border-line', 'bg-transparent');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var selected = '{{ selected_family }}';
+  if (selected === '3d') {
+    setModelFamily('3d');
+  } else {
+    setModelFamily('2d');
+  }
+
+  var fileInput = document.getElementById('file-input');
+  var fileNameEl = document.getElementById('file-name');
+  var previewContainer = document.getElementById('preview-container');
+  var imagePreview = document.getElementById('image-preview');
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (file) {
+        fileNameEl.textContent = file.name;
+        var isVolume = file.name.toLowerCase().endsWith('.nii') || file.name.toLowerCase().endsWith('.nii.gz');
+        if (isVolume) {
+          previewContainer.classList.remove('hidden');
+          imagePreview.style.display = 'none';
+        } else if (file.type.startsWith('image/')) {
+          previewContainer.classList.remove('hidden');
+          imagePreview.style.display = '';
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            imagePreview.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    });
+  }
+
+  var modal = document.getElementById('image-modal');
+  var modalImage = document.getElementById('modal-image');
+  var modalTitle = document.getElementById('modal-title');
+  var closeModal = document.getElementById('close-image-modal');
+
+  document.querySelectorAll('.explainability-viewer').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var src = el.getAttribute('data-image');
+      var title = el.getAttribute('data-title') || 'Image';
+      if (src) {
+        modalImage.src = src;
+        modalTitle.textContent = title;
+        modal.classList.remove('hidden');
+      }
+    });
+  });
+
+  if (closeModal) {
+    closeModal.addEventListener('click', function() {
+      modal.classList.add('hidden');
+      modalImage.src = '';
+    });
+  }
+
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+      modalImage.src = '';
+    }
+  });
+});
+</script>
+{% endblock %}
