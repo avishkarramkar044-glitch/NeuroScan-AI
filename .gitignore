@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MRI datasets - DO NOT upload
+Training/
+Testing/
+training/
+testing/
+dataset/
+datasets/
+
+# Uploaded/generated images
+static/uploads/
+static/results/
+uploads/
+results/
+
+# TensorFlow/Keras temporary files
+*.h5
+*.keras
+*.weights.h5
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
