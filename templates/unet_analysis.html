@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>NeuroScan AI - U-Net Explainability Lab</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        .page-container {
+            width: 94%;
+            max-width: 1450px;
+            margin: auto;
+            padding: 30px 0 60px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #111936, #18264d);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.10);
+        }
+
+        .header h1 {
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #b9c4df;
+            font-size: 15px;
+        }
+
+        .section {
+            background: #11182d;
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .section-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .upload-area {
+            border: 2px dashed #51638f;
+            border-radius: 15px;
+            padding: 35px;
+            text-align: center;
+            background: #0d1428;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+
+        .upload-label {
+            display: inline-block;
+            padding: 13px 24px;
+            border-radius: 10px;
+            background: #2c5cff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #b9c4df;
+            font-size: 14px;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .preview-container img {
+            max-width: 350px;
+            max-height: 350px;
+            border-radius: 12px;
+            border: 1px solid #405071;
+            object-fit: contain;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .button {
+            border: none;
+            border-radius: 10px;
+            padding: 13px 22px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .primary-button {
+            background: #2c5cff;
+            color: white;
+        }
+
+        .primary-button:hover {
+            background: #4770ff;
+        }
+
+        .secondary-button {
+            background: #263451;
+            color: white;
+        }
+
+        .secondary-button:hover {
+            background: #344565;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .threshold-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #c7d0e5;
+        }
+
+        .threshold-control select {
+            background: #0d1428;
+            color: white;
+            border: 1px solid #46567b;
+            border-radius: 8px;
+            padding: 9px 12px;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #17213c;
+            color: #cbd5ef;
+            text-align: center;
+        }
+
+        .error-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #421c27;
+            border: 1px solid #713344;
+            color: #ffb8c5;
+        }
+
+        .success-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #17372b;
+            border: 1px solid #2e7157;
+            color: #aee8cf;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .image-grid-three {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .image-card {
+            background: #0d1428;
+            border-radius: 14px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .image-card h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: #dbe3f8;
+        }
+
+        .result-image {
+            width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: #050914;
+            cursor: pointer;
+        }
+
+        .feature-image {
+            max-height: 300px;
+        }
+
+        .empty-image {
+            width: 100%;
+            min-height: 220px;
+            border-radius: 10px;
+            background: #080d1b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #647394;
+            text-align: center;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .metric-card {
+            background: #0d1428;
+            border-radius: 13px;
+            padding: 18px;
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .metric-title {
+            color: #9caac8;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 21px;
+            font-weight: bold;
+            color: #ffffff;
+            word-break: break-word;
+        }
+
+        .tumor-status {
+            display: inline-block;
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-positive {
+            background: #5a2733;
+            color: #ffb6c2;
+        }
+
+        .status-negative {
+            background: #19432f;
+            color: #b6efd2;
+        }
+
+        .threshold-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .threshold-table th,
+        .threshold-table td {
+            padding: 13px;
+            border-bottom: 1px solid #293552;
+            text-align: left;
+        }
+
+        .threshold-table th {
+            color: #aebbd5;
+            font-size: 13px;
+        }
+
+        .threshold-table td {
+            color: #e3e8f5;
+        }
+
+        .feature-description {
+            color: #8f9dbb;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        .info-box {
+            padding: 15px;
+            border-radius: 10px;
+            background: #151f38;
+            color: #aebbd5;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .footer-note {
+            color: #7583a2;
+            text-align: center;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #aebbd5;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+
+        @media (max-width: 1000px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .image-grid-three {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-container {
+                width: 92%;
+            }
+
+            .section {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <a href="/" class="back-link">← Back to NeuroScan AI</a>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🧠 NeuroScan AI — U-Net Explainability Lab</h1>
+        <p>
+            MRI tumor segmentation, localization, probability mapping,
+            saliency analysis and U-Net feature visualization.
+        </p>
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- UPLOAD SECTION                                             -->
+    <!-- ========================================================= -->
+
+    <div class="section">
+
+        <h2 class="section-title">1. Upload MRI Image</h2>
+
+        <div class="upload-area">
+
+            <label for="unet-file-input" class="upload-label">
+                Choose MRI Image
+            </label>
+
+            <input
+                type="file"
+                id="unet-file-input"
+                accept="image/*"
+            >
+
+            <div class="file-name" id="unet-file-name">
+                No MRI image selected
+            </div>
+
+            <div class="preview-container" id="unet-preview-container">
+                <img id="unet-original-preview" src="" alt="MRI Preview">
+            </div>
+
+        </div>
+
+        <div class="controls">
+
+            <div class="threshold-control">
+                <label for="unet-threshold">
+                    Segmentation Threshold:
+                </label>
+
+                <select id="unet-threshold">
+                    <option value="0.50">50%</option>
+                    <option value="0.30">30%</option>
+                    <option value="0.20">20%</option>
+                    <option value="0.10">10%</option>
+                </select>
+            </div>
+
+            <button
+                type="button"
+                class="button primary-button"
+                id="unet-analyze-button"
+                disabled
+            >
+                Analyze MRI
+            </button>
+
+            <button
+                type="button"
+                class="button secondary-button"
+                id="unet-reset-button"
+            >
+                Reset
+            </button>
+
+        </div>
+
+        <div class="loading" id="unet-loading">
+            🔄 U-Net is analyzing the MRI image. Please wait...
+        </div>
+
+        <div class="error-box" id="unet-error"></div>
+
+        <div class="success-box" id="unet-success">
+            ✓ U-Net analysis completed successfully.
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- RESULTS                                                    -->
+    <!-- ========================================================= -->
+
+    <div class="results" id="unet-results">
+
+
+        <!-- ORIGINAL MRI -->
+        <div class="section">
+
+            <h2 class="section-title">2. Original MRI</h2>
+
+            <div class="image-grid">
+
+                <div class="image-card">
+                    <h3>Input MRI</h3>
+
+                    <img
+                        id="unet-result-original"
+                        class="result-image"
+                        src=""
+                        alt="Original MRI"
+                    >
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Analysis Information</h3>
+
+                    <div class="info-box" id="unet-analysis-info">
+                        U-Net analysis information will appear here.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- PROBABILITY                                             -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                3. U-Net Tumor Probability Analysis
+            </h2>
+
+            <div class="image-grid">
+
+                <div class="image-card">
+
+                    <h3>Probability Heatmap</h3>
+
+                    <img
+                        id="unet-probability-heatmap"
+                        class="result-image"
+                        src=""
+                        alt="Tumor Probability Heatmap"
+                    >
+
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Probability Overlay</h3>
+
+                    <img
+                        id="unet-probability-overlay"
+                        class="result-image"
+                        src=""
+                        alt="Tumor Probability Overlay"
+                    >
+
+                </div>
+
+            </div>
+
+            <br>
+
+            <div class="metrics-grid">
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Maximum Probability
+                    </div>
+                    <div class="metric-value" id="metric-max-probability">
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Mean Probability
+                    </div>
+                    <div class="metric-value" id="metric-mean-probability">
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Minimum Probability
+                    </div>
+                    <div class="metric-value" id="metric-min-probability">
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Tumor Status
+                    </div>
+                    <div class="metric-value">
+                        <span
+                            id="metric-tumor-status"
+                            class="tumor-status"
+                        >
+                            —
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- SEGMENTATION                                            -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                4. Tumor Segmentation
+            </h2>
+
+            <div class="image-grid">
+
+                <div class="image-card">
+
+                    <h3>Binary Segmentation Mask</h3>
+
+                    <img
+                        id="unet-segmentation-mask"
+                        class="result-image"
+                        src=""
+                        alt="Segmentation Mask"
+                    >
+
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Segmentation Overlay</h3>
+
+                    <img
+                        id="unet-segmentation-overlay"
+                        class="result-image"
+                        src=""
+                        alt="Segmentation Overlay"
+                    >
+
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Tumor Boundary</h3>
+
+                    <img
+                        id="unet-boundary"
+                        class="result-image"
+                        src=""
+                        alt="Tumor Boundary"
+                    >
+
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Detected Tumor Region</h3>
+
+                    <img
+                        id="unet-tumor-region"
+                        class="result-image"
+                        src=""
+                        alt="Tumor Region"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- MEASUREMENTS                                            -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                5. Tumor Measurements
+            </h2>
+
+            <div class="metrics-grid">
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Tumor Area
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-tumor-area"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Tumor Pixels
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-tumor-pixels"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Image Pixels
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-image-pixels"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Connected Components
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-components"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Bounding Box
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-bounding-box"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Centroid
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-centroid"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Maximum Probability
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-measure-max-probability"
+                    >
+                        —
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">
+                        Mean Probability in Tumor
+                    </div>
+
+                    <div
+                        class="metric-value"
+                        id="metric-region-probability"
+                    >
+                        —
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- THRESHOLD COMPARISON                                   -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                6. Threshold Comparison
+            </h2>
+
+            <div class="info-box">
+                The same U-Net probability map is evaluated at multiple
+                thresholds. This helps visualize how the predicted tumor
+                region changes when the confidence requirement changes.
+            </div>
+
+            <table class="threshold-table">
+
+                <thead>
+                    <tr>
+                        <th>Threshold</th>
+                        <th>Tumor Pixels</th>
+                        <th>Tumor Area</th>
+                        <th>Mask</th>
+                    </tr>
+                </thead>
+
+                <tbody id="threshold-table-body">
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- SALIENCY                                                -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                7. Input-Gradient Saliency
+            </h2>
+
+            <div class="image-grid">
+
+                <div class="image-card">
+
+                    <h3>Gradient Saliency Heatmap</h3>
+
+                    <img
+                        id="unet-saliency-heatmap"
+                        class="result-image"
+                        src=""
+                        alt="Saliency Heatmap"
+                    >
+
+                </div>
+
+                <div class="image-card">
+
+                    <h3>Saliency Overlay</h3>
+
+                    <img
+                        id="unet-saliency-overlay"
+                        class="result-image"
+                        src=""
+                        alt="Saliency Overlay"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- FEATURE MAPS                                            -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                8. U-Net Convolutional Feature Maps
+            </h2>
+
+            <div class="info-box">
+                These visualizations show internal U-Net feature
+                activations at different depths of the network.
+                Shallow layers generally capture basic image structures,
+                middle layers capture more complex patterns, and deep
+                layers capture higher-level spatial features.
+            </div>
+
+            <br>
+
+            <div class="image-grid-three">
+
+                <!-- SHALLOW -->
+
+                <div class="image-card">
+
+                    <h3>Shallow Feature Map</h3>
+
+                    <img
+                        id="unet-feature-shallow"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Shallow Feature Map"
+                    >
+
+                    <div class="feature-description">
+                        Early convolutional representation of the MRI.
+                    </div>
+
+                    <br>
+
+                    <h3>Shallow Feature Overlay</h3>
+
+                    <img
+                        id="unet-overlay-shallow"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Shallow Feature Overlay"
+                    >
+
+                </div>
+
+
+                <!-- MIDDLE -->
+
+                <div class="image-card">
+
+                    <h3>Middle Feature Map</h3>
+
+                    <img
+                        id="unet-feature-middle"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Middle Feature Map"
+                    >
+
+                    <div class="feature-description">
+                        Intermediate representation containing more
+                        complex spatial patterns.
+                    </div>
+
+                    <br>
+
+                    <h3>Middle Feature Overlay</h3>
+
+                    <img
+                        id="unet-overlay-middle"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Middle Feature Overlay"
+                    >
+
+                </div>
+
+
+                <!-- DEEP -->
+
+                <div class="image-card">
+
+                    <h3>Deep Feature Map</h3>
+
+                    <img
+                        id="unet-feature-deep"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Deep Feature Map"
+                    >
+
+                    <div class="feature-description">
+                        Deeper U-Net representation associated with
+                        high-level learned spatial features.
+                    </div>
+
+                    <br>
+
+                    <h3>Deep Feature Overlay</h3>
+
+                    <img
+                        id="unet-overlay-deep"
+                        class="result-image feature-image"
+                        src=""
+                        alt="Deep Feature Overlay"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- FINAL SUMMARY                                          -->
+        <!-- ===================================================== -->
+
+        <div class="section">
+
+            <h2 class="section-title">
+                9. U-Net Explainability Summary
+            </h2>
+
+            <div class="info-box" id="unet-final-summary">
+                Analysis summary will appear here.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer-note">
+        NeuroScan AI — U-Net Explainability Module
+    </div>
+
+</div>
+
+
+<script>
+
+    /* ============================================================
+       ELEMENTS
+       ============================================================ */
+
+    const fileInput = document.getElementById("unet-file-input");
+    const fileName = document.getElementById("unet-file-name");
+    const previewContainer = document.getElementById(
+        "unet-preview-container"
+    );
+    const originalPreview = document.getElementById(
+        "unet-original-preview"
+    );
+
+    const analyzeButton = document.getElementById(
+        "unet-analyze-button"
+    );
+
+    const resetButton = document.getElementById(
+        "unet-reset-button"
+    );
+
+    const thresholdSelect = document.getElementById(
+        "unet-threshold"
+    );
+
+    const loadingBox = document.getElementById(
+        "unet-loading"
+    );
+
+    const errorBox = document.getElementById(
+        "unet-error"
+    );
+
+    const successBox = document.getElementById(
+        "unet-success"
+    );
+
+    const resultsBox = document.getElementById(
+        "unet-results"
+    );
+
+
+    /* ============================================================
+       FILE SELECTION
+       ============================================================ */
+
+    fileInput.addEventListener("change", function () {
+
+        errorBox.style.display = "none";
+        successBox.style.display = "none";
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+
+            fileName.textContent = "No MRI image selected";
+
+            previewContainer.style.display = "none";
+
+            analyzeButton.disabled = true;
+
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        fileName.textContent = file.name;
+
+        analyzeButton.disabled = false;
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            originalPreview.src = event.target.result;
+
+            previewContainer.style.display = "block";
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+    /* ============================================================
+       IMAGE URL HELPER
+       ============================================================ */
+
+    function setImage(elementId, url) {
+
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            return;
+        }
+
+        if (url) {
+
+            element.src = url;
+
+            element.style.display = "block";
+
+        } else {
+
+            element.removeAttribute("src");
+
+            element.style.display = "none";
+
+        }
+    }
+
+
+    /* ============================================================
+       NUMBER FORMAT
+       ============================================================ */
+
+    function formatNumber(value) {
+
+        if (value === null || value === undefined) {
+            return "—";
+        }
+
+        if (typeof value === "number") {
+
+            return value.toLocaleString(
+                undefined,
+                {
+                    maximumFractionDigits: 4
+                }
+            );
+
+        }
+
+        return value;
+
+    }
+
+
+    function formatPercent(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            isNaN(Number(value))
+        ) {
+            return "—";
+        }
+
+        return Number(value).toFixed(2) + "%";
+
+    }
+
+
+    function formatProbability(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            isNaN(Number(value))
+        ) {
+            return "—";
+        }
+
+        let number = Number(value);
+
+        if (number <= 1) {
+            number = number * 100;
+        }
+
+        return number.toFixed(2) + "%";
+
+    }
+
+
+    /* ============================================================
+       SHOW ERROR
+       ============================================================ */
+
+    function showError(message) {
+
+        errorBox.textContent = "❌ " + message;
+
+        errorBox.style.display = "block";
+
+        successBox.style.display = "none";
+
+    }
+
+
+    /* ============================================================
+       ANALYZE MRI
+       ============================================================ */
+
+    analyzeButton.addEventListener(
+        "click",
+        async function () {
+
+            if (
+                !fileInput.files ||
+                fileInput.files.length === 0
+            ) {
+
+                showError("Please select an MRI image first.");
+
+                return;
+
+            }
+
+
+            const file = fileInput.files[0];
+
+            const threshold = thresholdSelect.value;
+
+
+            const formData = new FormData();
+
+            formData.append("image", file);
+
+            formData.append("threshold", threshold);
+
+
+            loadingBox.style.display = "block";
+
+            errorBox.style.display = "none";
+
+            successBox.style.display = "none";
+
+            resultsBox.style.display = "none";
+
+            analyzeButton.disabled = true;
+
+
+            try {
+
+                const response = await fetch(
+                    "/unet/analyze",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+                let data;
+
+                try {
+
+                    data = await response.json();
+
+                } catch (jsonError) {
+
+                    throw new Error(
+                        "Server returned an invalid response."
+                    );
+
+                }
+
+
+                if (!response.ok || data.success === false) {
+
+                    throw new Error(
+                        data.error ||
+                        data.message ||
+                        "U-Net analysis failed."
+                    );
+
+                }
+
+
+                displayResults(data);
+
+
+                loadingBox.style.display = "none";
+
+                successBox.style.display = "block";
+
+                resultsBox.style.display = "block";
+
+
+                window.scrollTo(
+                    {
+                        top: resultsBox.offsetTop - 20,
+                        behavior: "smooth"
+                    }
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "U-Net analysis error:",
+                    error
+                );
+
+                loadingBox.style.display = "none";
+
+                showError(
+                    error.message ||
+                    "Unable to analyze the MRI image."
+                );
+
+            } finally {
+
+                analyzeButton.disabled = false;
+
+            }
+
+        }
+    );
+
+
+    /* ============================================================
+       DISPLAY RESULTS
+       ============================================================ */
+
+    function displayResults(data) {
+
+        console.log(
+            "U-Net analysis result:",
+            data
+        );
+
+
+        /* --------------------------------------------------------
+           ORIGINAL IMAGE
+           -------------------------------------------------------- */
+
+        if (data.original) {
+
+            setImage(
+                "unet-result-original",
+                data.original
+            );
+
+        }
+
+
+        /* --------------------------------------------------------
+           PROBABILITY
+           -------------------------------------------------------- */
+
+        if (data.probability) {
+
+            setImage(
+                "unet-probability-heatmap",
+                data.probability.heatmap
+            );
+
+            setImage(
+                "unet-probability-overlay",
+                data.probability.overlay
+            );
+
+
+            document.getElementById(
+                "metric-max-probability"
+            ).textContent =
+                formatProbability(
+                    data.probability.maximum
+                );
+
+
+            document.getElementById(
+                "metric-mean-probability"
+            ).textContent =
+                formatProbability(
+                    data.probability.mean
+                );
+
+
+            document.getElementById(
+                "metric-min-probability"
+            ).textContent =
+                formatProbability(
+                    data.probability.minimum
+                );
+
+        }
+
+
+        /* --------------------------------------------------------
+           MEASUREMENTS
+           -------------------------------------------------------- */
+
+        const measurements =
+            data.measurements || {};
+
+
+        document.getElementById(
+            "metric-tumor-area"
+        ).textContent =
+            formatPercent(
+                measurements.tumor_area_percentage
+            );
+
+
+        document.getElementById(
+            "metric-tumor-pixels"
+        ).textContent =
+            formatNumber(
+                measurements.tumor_pixels
+            );
+
+
+        document.getElementById(
+            "metric-image-pixels"
+        ).textContent =
+            formatNumber(
+                measurements.image_pixels
+            );
+
+
+        document.getElementById(
+            "metric-components"
+        ).textContent =
+            formatNumber(
+                measurements.component_count
+            );
+
+
+        document.getElementById(
+            "metric-bounding-box"
+        ).textContent =
+            formatGeometry(
+                measurements.bounding_box
+            );
+
+
+        document.getElementById(
+            "metric-centroid"
+        ).textContent =
+            formatGeometry(
+                measurements.centroid
+            );
+
+
+        document.getElementById(
+            "metric-measure-max-probability"
+        ).textContent =
+            formatProbability(
+                measurements.maximum_probability
+            );
+
+
+        document.getElementById(
+            "metric-region-probability"
+        ).textContent =
+            formatProbability(
+                measurements.mean_probability_in_region
+            );
+
+
+        /* --------------------------------------------------------
+           TUMOR STATUS
+           -------------------------------------------------------- */
+
+        const statusElement =
+            document.getElementById(
+                "metric-tumor-status"
+            );
+
+
+        const tumorPixels =
+            Number(
+                measurements.tumor_pixels || 0
+            );
+
+
+        if (tumorPixels > 0) {
+
+            statusElement.textContent =
+                "Tumor Region Detected";
+
+            statusElement.className =
+                "tumor-status status-positive";
+
+        } else {
+
+            statusElement.textContent =
+                "No Tumor Region Detected";
+
+            statusElement.className =
+                "tumor-status status-negative";
+
+        }
+
+
+        /* --------------------------------------------------------
+           SEGMENTATION
+           -------------------------------------------------------- */
+
+        if (data.segmentation) {
+
+            setImage(
+                "unet-segmentation-mask",
+                data.segmentation.mask
+            );
+
+            setImage(
+                "unet-segmentation-overlay",
+                data.segmentation.overlay
+            );
+
+            setImage(
+                "unet-boundary",
+                data.segmentation.boundary
+            );
+
+
+            /*
+             * Some versions of unet_features.py may return
+             * tumor_region directly. If it exists, display it.
+             */
+
+            setImage(
+                "unet-tumor-region",
+                data.segmentation.tumor_region ||
+                data.segmentation.overlay
+            );
+
+        }
+
+
+        /* --------------------------------------------------------
+           THRESHOLD TABLE
+           -------------------------------------------------------- */
+
+        buildThresholdTable(
+            data.thresholds || {}
+        );
+
+
+        /* --------------------------------------------------------
+           SALIENCY
+           -------------------------------------------------------- */
+
+        if (data.saliency) {
+
+            setImage(
+                "unet-saliency-heatmap",
+                data.saliency.heatmap
+            );
+
+            setImage(
+                "unet-saliency-overlay",
+                data.saliency.overlay
+            );
+
+        } else {
+
+            setImage(
+                "unet-saliency-heatmap",
+                null
+            );
+
+            setImage(
+                "unet-saliency-overlay",
+                null
+            );
+
+        }
+
+
+        /* --------------------------------------------------------
+           FEATURE MAPS
+           -------------------------------------------------------- */
+
+        const featureMaps =
+            data.feature_maps || {};
+
+
+        if (featureMaps.shallow) {
+
+            setImage(
+                "unet-feature-shallow",
+                featureMaps.shallow.feature_map
+            );
+
+            setImage(
+                "unet-overlay-shallow",
+                featureMaps.shallow.overlay
+            );
+
+        }
+
+
+        if (featureMaps.middle) {
+
+            setImage(
+                "unet-feature-middle",
+                featureMaps.middle.feature_map
+            );
+
+            setImage(
+                "unet-overlay-middle",
+                featureMaps.middle.overlay
+            );
+
+        }
+
+
+        if (featureMaps.deep) {
+
+            setImage(
+                "unet-feature-deep",
+                featureMaps.deep.feature_map
+            );
+
+            setImage(
+                "unet-overlay-deep",
+                featureMaps.deep.overlay
+            );
+
+        }
+
+
+        /* --------------------------------------------------------
+           ANALYSIS INFORMATION
+           -------------------------------------------------------- */
+
+        const maxProbability =
+            measurements.maximum_probability;
+
+
+        const area =
+            measurements.tumor_area_percentage;
+
+
+        const componentCount =
+            measurements.component_count;
+
+
+        document.getElementById(
+            "unet-analysis-info"
+        ).innerHTML =
+
+            "<strong>Model:</strong> Improved U-Net<br>" +
+
+            "<strong>Selected Threshold:</strong> " +
+            escapeHtml(
+                thresholdSelect.value
+            ) +
+            "<br>" +
+
+            "<strong>Maximum Probability:</strong> " +
+            escapeHtml(
+                formatProbability(
+                    maxProbability
+                )
+            ) +
+            "<br>" +
+
+            "<strong>Detected Tumor Area:</strong> " +
+            escapeHtml(
+                formatPercent(area)
+            ) +
+            "<br>" +
+
+            "<strong>Connected Components:</strong> " +
+            escapeHtml(
+                formatNumber(componentCount)
+            );
+
+
+        /* --------------------------------------------------------
+           FINAL SUMMARY
+           -------------------------------------------------------- */
+
+        createFinalSummary(
+            data
+        );
+
+    }
+
+
+    /* ============================================================
+       FORMAT GEOMETRY
+       ============================================================ */
+
+    function formatGeometry(value) {
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+
+            return "—";
+
+        }
+
+
+        if (typeof value === "object") {
+
+            try {
+
+                return JSON.stringify(value);
+
+            } catch (error) {
+
+                return String(value);
+
+            }
+
+        }
+
+
+        return String(value);
+
+    }
+
+
+    /* ============================================================
+       THRESHOLD TABLE
+       ============================================================ */
+
+    function buildThresholdTable(thresholds) {
+
+        const tbody =
+            document.getElementById(
+                "threshold-table-body"
+            );
+
+
+        tbody.innerHTML = "";
+
+
+        const preferredOrder =
+            [
+                "0.5",
+                "0.3",
+                "0.2",
+                "0.1"
+            ];
+
+
+        let keys =
+            Object.keys(thresholds);
+
+
+        keys.sort(
+            function (a, b) {
+
+                const ia =
+                    preferredOrder.indexOf(a);
+
+                const ib =
+                    preferredOrder.indexOf(b);
+
+
+                if (ia !== -1 && ib !== -1) {
+                    return ia - ib;
+                }
+
+                if (ia !== -1) {
+                    return -1;
+                }
+
+                if (ib !== -1) {
+                    return 1;
+                }
+
+                return Number(b) - Number(a);
+
+            }
+        );
+
+
+        if (keys.length === 0) {
+
+            const row =
+                document.createElement("tr");
+
+            row.innerHTML =
+                "<td colspan='4'>No threshold data available.</td>";
+
+            tbody.appendChild(row);
+
+            return;
+
+        }
+
+
+        keys.forEach(
+            function (threshold) {
+
+                const item =
+                    thresholds[threshold] || {};
+
+
+                const row =
+                    document.createElement("tr");
+
+
+                const area =
+                    item.tumor_area_percentage;
+
+
+                row.innerHTML =
+
+                    "<td>" +
+                    escapeHtml(
+                        (Number(threshold) * 100)
+                            .toFixed(0) + "%"
+                    ) +
+                    "</td>" +
+
+                    "<td>" +
+                    escapeHtml(
+                        formatNumber(
+                            item.tumor_pixels
+                        )
+                    ) +
+                    "</td>" +
+
+                    "<td>" +
+                    escapeHtml(
+                        formatPercent(area)
+                    ) +
+                    "</td>" +
+
+                    "<td>" +
+
+                    (
+                        item.mask
+                        ?
+                        "<a href='" +
+                        encodeURI(item.mask) +
+                        "' target='_blank'>" +
+                        "Open Mask" +
+                        "</a>"
+                        :
+                        "—"
+                    ) +
+
+                    "</td>";
+
+
+                tbody.appendChild(row);
+
+            }
+        );
+
+    }
+
+
+    /* ============================================================
+       FINAL SUMMARY
+       ============================================================ */
+
+    function createFinalSummary(data) {
+
+        const measurements =
+            data.measurements || {};
+
+
+        const area =
+            Number(
+                measurements.tumor_area_percentage || 0
+            );
+
+
+        const pixels =
+            Number(
+                measurements.tumor_pixels || 0
+            );
+
+
+        const components =
+            Number(
+                measurements.component_count || 0
+            );
+
+
+        const maximumProbability =
+            Number(
+                measurements.maximum_probability || 0
+            );
+
+
+        let statusText;
+
+
+        if (pixels > 0) {
+
+            statusText =
+                "The U-Net produced a non-zero segmented region " +
+                "at the selected threshold.";
+
+        } else {
+
+            statusText =
+                "The U-Net did not produce a segmented region " +
+                "at the selected threshold.";
+
+        }
+
+
+        document.getElementById(
+            "unet-final-summary"
+        ).innerHTML =
+
+            "<strong>Result:</strong> " +
+            escapeHtml(statusText) +
+
+            "<br><br>" +
+
+            "<strong>Tumor Area:</strong> " +
+            escapeHtml(
+                formatPercent(area)
+            ) +
+
+            "<br>" +
+
+            "<strong>Tumor Pixels:</strong> " +
+            escapeHtml(
+                formatNumber(pixels)
+            ) +
+
+            "<br>" +
+
+            "<strong>Connected Components:</strong> " +
+            escapeHtml(
+                formatNumber(components)
+            ) +
+
+            "<br>" +
+
+            "<strong>Maximum U-Net Probability:</strong> " +
+            escapeHtml(
+                formatProbability(
+                    maximumProbability
+                )
+            ) +
+
+            "<br><br>" +
+
+            "<strong>Important:</strong> " +
+
+            "This segmentation result is an AI-generated " +
+            "research visualization and should not be treated " +
+            "as a clinical diagnosis or exact medical tumor-size " +
+            "measurement.";
+
+    }
+
+
+    /* ============================================================
+       ESCAPE HTML
+       ============================================================ */
+
+    function escapeHtml(value) {
+
+        if (value === null || value === undefined) {
+
+            return "";
+
+        }
+
+
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
+    /* ============================================================
+       RESET
+       ============================================================ */
+
+    resetButton.addEventListener(
+        "click",
+        function () {
+
+            fileInput.value = "";
+
+            fileName.textContent =
+                "No MRI image selected";
+
+            previewContainer.style.display =
+                "none";
+
+            originalPreview.removeAttribute(
+                "src"
+            );
+
+            resultsBox.style.display =
+                "none";
+
+            loadingBox.style.display =
+                "none";
+
+            errorBox.style.display =
+                "none";
+
+            successBox.style.display =
+                "none";
+
+            analyzeButton.disabled =
+                true;
+
+        }
+    );
+
+
+    /* ============================================================
+       CLICK IMAGE TO OPEN LARGE VERSION
+       ============================================================ */
+
+    document.addEventListener(
+        "click",
+        function (event) {
+
+            const target =
+                event.target;
+
+
+            if (
+                target.classList &&
+                target.classList.contains(
+                    "result-image"
+                ) &&
+                target.src
+            ) {
+
+                window.open(
+                    target.src,
+                    "_blank"
+                );
+
+            }
+
+        }
+    );
+
+</script>
+
+</body>
+</html>

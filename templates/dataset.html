@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Dataset Statistics — NeuroScan AI{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-7xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Training Data</p>
+    <h1 class="mt-2 text-4xl font-black text-white">Dataset Statistics</h1>
+    <p class="mt-2 text-slate-400">Distribution and analysis of the Brain Tumor Classification dataset used for training the AI models.</p>
+  </div>
+
+  {% if not dataset_available %}
+  <div class="glass rounded-3xl p-10 text-center">
+    <i class="fa-solid fa-database text-5xl text-slate-600"></i>
+    <h3 class="mt-5 text-xl font-black text-slate-200">Dataset folder not found</h3>
+    <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-500">The Brain-Tumor-Classification-DataSet folder was not found in the project root.</p>
+  </div>
+  {% else %}
+
+  <!-- Summary Cards -->
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div class="glass rounded-2xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-cyanx/15 text-cyanx"><i class="fa-solid fa-image"></i></span>
+        <div><p class="text-xs text-slate-500">Total Images</p><p class="text-2xl font-black text-white">{{ total_images }}</p></div>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-violetx/15 text-violet-300"><i class="fa-solid fa-layer-group"></i></span>
+        <div><p class="text-xs text-slate-500">Classes</p><p class="text-2xl font-black text-white">{{ total_classes }}</p></div>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><i class="fa-solid fa-check"></i></span>
+        <div><p class="text-xs text-slate-500">Avg per Class</p><p class="text-2xl font-black text-white">{{ (total_images / total_classes)|round(0)|int }}</p></div>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-400/15 text-amber-300"><i class="fa-solid fa-chart-pie"></i></span>
+        <div><p class="text-xs text-slate-500">Format</p><p class="text-2xl font-black text-white">JPG</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class Distribution Bar Chart -->
+  <div class="glass rounded-3xl p-6 mb-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300 mb-4">Class Distribution</p>
+    <div class="space-y-4">
+      {% for cs in class_stats %}
+      <div>
+        <div class="flex justify-between text-sm mb-2">
+          <span class="font-bold text-slate-200">{{ cs.name }}</span>
+          <span class="text-slate-400">{{ cs.count }} images ({{ cs.percentage }}%)</span>
+        </div>
+        <div class="h-3 overflow-hidden rounded-full bg-slate-800">
+          <div class="h-full rounded-full bg-gradient-to-r from-violetx to-cyanx" style="width:{{ cs.percentage }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Sample Images -->
+  <div class="glass rounded-3xl p-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300 mb-4">Sample Images from Each Class</p>
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {% for cs in class_stats %}
+      <div class="rounded-2xl border border-line bg-slate-950/40 overflow-hidden">
+        {% if cs.sample_image %}
+        <img src="{{ cs.sample_image }}" class="w-full h-48 object-cover" alt="{{ cs.name }}" 
+             onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\\'h-48 grid place-items-center\\'><i class=\\'fa-solid fa-image text-3xl text-slate-600\\'></i></div>'">
+        {% else %}
+        <div class="h-48 grid place-items-center"><i class="fa-solid fa-image text-3xl text-slate-600"></i></div>
+        {% endif %}
+        <div class="p-3">
+          <p class="font-bold text-white text-sm">{{ cs.name }}</p>
+          <p class="text-xs text-slate-500">{{ cs.count }} images</p>
+          <p class="text-xs font-mono text-cyanx mt-1">{{ cs.folder_name }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pie Chart -->
+  <div class="glass rounded-3xl p-6 mt-6">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx mb-4">Distribution Pie Chart</p>
+    <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+      <canvas id="datasetPieChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm text-amber-100">
+    <i class="fa-solid fa-circle-info mr-2"></i>
+    This dataset was used for training all 4 classification models (VGG16, EfficientNetB0, Custom Deep CNN, ANN) and the weighted ensemble. The 3D volumetric pipeline uses a separate RSNA-MICCAI dataset.
+  </div>
+
+  {% endif %}
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+{% if dataset_available and class_stats %}
+(function(){
+  var ctx = document.getElementById('datasetPieChart');
+  if (!ctx) return;
+  
+  var labels = [{% for cs in class_stats %}"{{ cs.name }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+  var data = [{% for cs in class_stats %}{{ cs.count }}{% if not loop.last %}, {% endif %}{% endfor %}];
+  var colors = ['#f43f5e', '#f59e0b', '#10b981', '#8b7cff', '#59e5ef', '#a78bfa'];
+  
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: '#08111f',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#cbd5e1', font: { size: 12 } }
+        },
+        title: {
+          display: true,
+          text: 'Dataset Class Distribution',
+          color: '#cbd5e1',
+          font: { size: 14, weight: 'bold' }
+        }
+      }
+    }
+  });
+})();
+{% endif %}
+</script>
+{% endblock %}

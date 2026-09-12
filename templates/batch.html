@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Batch Upload — NeuroScan AI{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-5xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Bulk Analysis</p>
+    <h1 class="mt-2 text-4xl font-black text-white">Batch MRI Upload</h1>
+    <p class="mt-2 text-slate-400">Upload multiple MRI images at once. Each image is analyzed by the 2D ensemble and results are shown in a table.</p>
+  </div>
+
+  {% if error %}
+  <div class="mb-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200"><i class="fa-solid fa-circle-exclamation mr-2"></i>{{ error }}</div>
+  {% endif %}
+
+  {% if not results %}
+  <form method="POST" enctype="multipart/form-data" class="glass rounded-3xl p-8">
+    <label class="relative block cursor-pointer rounded-2xl border-2 border-dashed border-line bg-slate-950/30 px-5 py-12 text-center transition hover:border-cyanx/60">
+      <input type="file" name="files" multiple accept=".png,.jpg,.jpeg,.webp" required class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+      <i class="fa-solid fa-images text-5xl text-violet-300"></i>
+      <p class="mt-4 font-bold text-slate-200">Choose multiple MRI images</p>
+      <p class="mt-1 text-xs text-slate-500">Select 2 or more PNG/JPG/JPEG/WEBP files</p>
+    </label>
+    <button type="submit" class="mt-5 w-full rounded-xl bg-violetx py-3.5 font-black text-white shadow-xl shadow-violetx/20 hover:bg-violet-500">
+      <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Analyze All Images
+    </button>
+  </form>
+  {% else %}
+  <div class="glass rounded-3xl p-6">
+    <div class="mb-5 flex items-center justify-between">
+      <h2 class="text-2xl font-black text-white">Results: {{ results|length }} images analyzed</h2>
+      <a href="/batch" class="rounded-xl border border-line bg-slate-950/40 px-4 py-2 text-sm font-bold text-slate-200"><i class="fa-solid fa-rotate-right mr-2"></i>New Batch</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line text-xs uppercase text-slate-500">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Filename</th>
+            <th class="px-4 py-3">Prediction</th>
+            <th class="px-4 py-3">Confidence</th>
+            <th class="px-4 py-3">Priority</th>
+            <th class="px-4 py-3">Specialist</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr class="border-b border-line/60">
+            <td class="px-4 py-4 text-slate-500">{{ loop.index }}</td>
+            <td class="px-4 py-4 font-bold text-slate-200">{{ r.filename }}</td>
+            <td class="px-4 py-4 text-cyanx">{{ r.prediction }}</td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-16 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-violetx to-cyanx" style="width:{{ r.confidence }}%"></div></div>
+                <span class="font-bold">{{ r.confidence }}%</span>
+              </div>
+            </td>
+            <td class="px-4 py-4"><span class="rounded-full px-3 py-1 text-xs font-bold" style="background:{{ r.severity_color }}20;color:{{ r.severity_color }}">{{ r.severity }}</span></td>
+            <td class="px-4 py-4 text-slate-400 text-xs">{{ r.specialist }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

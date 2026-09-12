@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Model Analytics — NeuroScan AI
+{% endblock %}
+
+{% block content %}
+
+<section class="mx-auto max-w-7xl px-5 py-12">
+
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">
+      Analytics / Training evidence
+    </p>
+    <h1 class="mt-2 text-4xl font-black">
+      Training convergence & TensorBoard
+    </h1>
+    <p class="mt-2 max-w-3xl text-slate-400">
+      This page uses your real saved Keras history. No training accuracy or
+      loss values are invented by the dashboard.
+    </p>
+  </div>
+
+
+  <!-- PREDICTION DASHBOARD -->
+  {% if pred_stats and pred_stats.total_predictions > 0 %}
+  <section class="mt-7 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Prediction Analytics</p>
+        <h2 class="mt-2 text-2xl font-black text-white">Dashboard Overview</h2>
+      </div>
+      <span class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-200">{{ pred_stats.total_predictions }} Total Predictions</span>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-cyanx/15 text-cyanx"><i class="fa-solid fa-brain"></i></span>
+          <div><p class="text-xs text-slate-500">Total Predictions</p><p class="text-2xl font-black text-white">{{ pred_stats.total_predictions }}</p></div>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><i class="fa-solid fa-check"></i></span>
+          <div><p class="text-xs text-slate-500">Avg Confidence</p><p class="text-2xl font-black text-white">{{ pred_stats.avg_confidence }}%</p></div>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-violetx/15 text-violet-300"><i class="fa-solid fa-image"></i></span>
+          <div><p class="text-xs text-slate-500">2D Scans</p><p class="text-2xl font-black text-white">{{ pred_stats["2d_predictions"] }}</p></div>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-400/15 text-amber-300"><i class="fa-solid fa-cube"></i></span>
+          <div><p class="text-xs text-slate-500">3D Scans</p><p class="text-2xl font-black text-white">{{ pred_stats["3d_predictions"] }}</p></div>
+        </div>
+      </div>
+    </div>
+
+    {% if pred_stats.class_counts %}
+    <div class="mt-6 grid gap-5 lg:grid-cols-2">
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Tumor Type Distribution</p>
+        <div class="space-y-3">
+          {% for tumor, count in pred_stats.class_counts.items() %}
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span class="capitalize text-slate-300">{{ tumor|replace('_',' ') }}</span><span class="font-bold text-cyanx">{{ count }}</span></div>
+            <div class="h-2 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-violetx to-cyanx" style="width:{{ (count / pred_stats.total_predictions * 100)|round(1) }}%"></div></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="rounded-2xl border border-line bg-slate-950/30 p-5">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Confidence Breakdown</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-center">
+            <p class="text-3xl font-black text-emerald-300">{{ pred_stats.high_confidence }}</p>
+            <p class="text-xs text-slate-500 mt-1">High Confidence (>=80%)</p>
+          </div>
+          <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-center">
+            <p class="text-3xl font-black text-amber-300">{{ pred_stats.low_confidence }}</p>
+            <p class="text-xs text-slate-500 mt-1">Low Confidence (<50%)</p>
+          </div>
+        </div>
+        {% if pred_stats.model_usage %}
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mt-5 mb-3">Model Usage</p>
+        <div class="space-y-2">
+          {% for model, count in pred_stats.model_usage.items() %}
+          <div class="flex justify-between text-xs"><span class="text-slate-400">{{ model }}</span><span class="font-bold text-slate-200">{{ count }}x</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+
+  <!-- STATUS -->
+  <div class="grid gap-5 md:grid-cols-3">
+
+    <div class="glass rounded-2xl p-6">
+      <p class="text-xs font-bold uppercase tracking-wider text-cyanx">
+        Keras history
+      </p>
+      <p class="mt-3 text-2xl font-black">
+        {% if has_history %}FOUND{% else %}NOT FOUND{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if history_file %}
+          {{ history_file }}
+        {% else %}
+          Add training_history.json or history.json.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="glass rounded-2xl p-6">
+      <p class="text-xs font-bold uppercase tracking-wider text-violet-300">
+        TensorBoard events
+      </p>
+      <p class="mt-3 text-2xl font-black">
+        {% if has_tb_logs %}READY{% else %}NOT FOUND{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if has_tb_logs %}
+          Event data detected in the project logs folder.
+        {% else %}
+          Run training with the TensorBoard callback.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="glass rounded-2xl p-6">
+      <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+        Interpretation
+      </p>
+      <p class="mt-3 text-lg font-black">Watch the validation curve</p>
+      <p class="mt-2 text-sm leading-6 text-slate-500">
+        A large train/validation gap can indicate overfitting.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- REAL HISTORY CHARTS -->
+  <section class="mt-7 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">
+          Saved Keras history
+        </p>
+        <h2 class="mt-2 text-2xl font-black">Accuracy convergence</h2>
+      </div>
+      {% if has_history %}
+      <span class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-200">
+        REAL HISTORY LOADED
+      </span>
+      {% endif %}
+    </div>
+
+    {% if has_history %}
+      {% if chart_data and chart_data.epochs %}
+      <div class="mt-6 rounded-2xl border border-line bg-slate-950/30 p-5">
+        <canvas id="accuracyChart" height="120"></canvas>
+      </div>
+      {% else %}
+      <img src="{{ url_for('static', filename='performance_plots/training_performance.png') }}" class="mt-6 w-full rounded-2xl border border-line" alt="Training accuracy convergence">
+      {% endif %}
+    {% else %}
+      <div class="mt-6 rounded-2xl border border-line bg-slate-950/30 p-10 text-center">
+        <i class="fa-solid fa-chart-line text-5xl text-slate-600"></i>
+        <h3 class="mt-5 text-xl font-black text-slate-200">No real training history found</h3>
+        <p class="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">After training, save the Keras History object as <code class="text-cyanx">training_history.json</code>.</p>
+      </div>
+    {% endif %}
+  </section>
+
+
+  {% if has_history and has_loss_plot %}
+  <section class="mt-7 glass rounded-3xl p-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-rose-300">Saved Keras history</p>
+        <h2 class="mt-2 text-2xl font-black">Loss convergence</h2>
+      </div>
+      <span class="rounded-full bg-rose-400/10 px-3 py-1 text-xs font-bold text-rose-200">TRAIN + VAL LOSS</span>
+    </div>
+    {% if chart_data and chart_data.epochs %}
+    <div class="mt-6 rounded-2xl border border-line bg-slate-950/30 p-5"><canvas id="lossChart" height="120"></canvas></div>
+    {% else %}
+    <img src="{{ url_for('static', filename='performance_plots/training_loss.png') }}" class="mt-6 w-full rounded-2xl border border-line" alt="Training loss convergence">
+    {% endif %}
+  </section>
+  {% endif %}
+
+
+  <div class="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm text-amber-100">
+    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+    Training plots and TensorBoard are evidence of model training behavior, not proof of clinical validity.
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+{% if chart_data and chart_data.epochs %}
+(function(){
+  var ctx = document.getElementById('accuracyChart');
+  if (!ctx) return;
+  var cd = {{ chart_data | tojson }};
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: cd.epochs,
+      datasets: [
+        { label: 'Train Accuracy', data: cd.train_accuracy, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: false, tension: 0.3, pointRadius: 3 },
+        { label: 'Validation Accuracy', data: cd.val_accuracy, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', fill: false, tension: 0.3, pointRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: 'Train vs Validation Accuracy', color: '#cbd5e1' } },
+      scales: {
+        x: { title: { display: true, text: 'Epoch', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y: { title: { display: true, text: 'Accuracy', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }
+      }
+    }
+  });
+})();
+{% endif %}
+
+{% if chart_data and chart_data.epochs %}
+(function(){
+  var ctx = document.getElementById('lossChart');
+  if (!ctx) return;
+  var cd = {{ chart_data | tojson }};
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: cd.epochs,
+      datasets: [
+        { label: 'Train Loss', data: cd.train_loss, borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: false, tension: 0.3, pointRadius: 3 },
+        { label: 'Validation Loss', data: cd.val_loss, borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.1)', fill: false, tension: 0.3, pointRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: 'Train vs Validation Loss', color: '#cbd5e1' } },
+      scales: {
+        x: { title: { display: true, text: 'Epoch', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y: { title: { display: true, text: 'Loss', color: '#94a3b8' }, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }
+      }
+    }
+  });
+})();
+{% endif %}
+</script>
+
+{% endblock %}

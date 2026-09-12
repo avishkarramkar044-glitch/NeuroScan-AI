@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Patient Management — NeuroScan AI{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-6xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Clinical Workflow</p>
+    <h1 class="mt-2 text-4xl font-black text-white">Patient Management</h1>
+    <p class="mt-2 text-slate-400">Manage patient records, link MRI scans to patients, and track prediction history.</p>
+  </div>
+
+  <div class="grid gap-7 lg:grid-cols-[1fr_2fr]">
+    <div class="glass rounded-3xl p-6">
+      <h2 class="font-black text-white mb-4"><i class="fa-solid fa-user-plus mr-2 text-violet-300"></i>Add New Patient</h2>
+      <form action="/patients/add" method="POST" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Patient Name</label>
+          <input type="text" name="name" required class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Age</label>
+            <input type="number" name="age" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Gender</label>
+            <select name="gender" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Scan Date</label>
+          <input type="date" name="scan_date" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Tumor Type</label>
+            <select name="tumor_type" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+              <option value="">Select</option>
+              <option value="glioma_tumor">Glioma</option>
+              <option value="meningioma_tumor">Meningioma</option>
+              <option value="no_tumor">No Tumor</option>
+              <option value="pituitary_tumor">Pituitary</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Confidence</label>
+            <input type="text" name="confidence" placeholder="e.g. 98.5%" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes</label>
+          <textarea name="notes" rows="3" class="w-full rounded-xl border border-line bg-slate-950/70 px-4 py-2.5 text-slate-200 outline-none focus:border-cyanx"></textarea>
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-violetx py-3 font-black text-white shadow-xl shadow-violetx/20 hover:bg-violet-500"><i class="fa-solid fa-save mr-2"></i>Save Patient</button>
+      </form>
+    </div>
+
+    <div class="glass rounded-3xl p-6">
+      <h2 class="font-black text-white mb-4"><i class="fa-solid fa-users mr-2 text-cyanx"></i>Patient Records ({{ patients|length }})</h2>
+      {% if patients %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-line text-xs uppercase text-slate-500">
+            <tr>
+              <th class="px-3 py-3">Name</th>
+              <th class="px-3 py-3">Age</th>
+              <th class="px-3 py-3">Tumor Type</th>
+              <th class="px-3 py-3">Confidence</th>
+              <th class="px-3 py-3">Date</th>
+              <th class="px-3 py-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in patients %}
+            <tr class="border-b border-line/60">
+              <td class="px-3 py-3 font-bold text-slate-200">{{ p.name }}</td>
+              <td class="px-3 py-3 text-slate-400">{{ p.age or '-' }}</td>
+              <td class="px-3 py-3 text-cyanx">{{ p.tumor_type or '-' }}</td>
+              <td class="px-3 py-3 text-emerald-300">{{ p.confidence or '-' }}</td>
+              <td class="px-3 py-3 text-slate-500 text-xs">{{ p.scan_date or p.created_at }}</td>
+              <td class="px-3 py-3"><a href="/patients/delete/{{ p.id }}" class="text-rose-400 hover:text-rose-300" onclick="return confirm('Delete this patient?')"><i class="fa-solid fa-trash"></i></a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-10"><i class="fa-solid fa-folder-open text-5xl text-slate-600"></i><p class="mt-4 text-slate-500">No patients yet. Add a patient using the form.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

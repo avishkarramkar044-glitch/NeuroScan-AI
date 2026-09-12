@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}
+About Us — NeuroScan AI
+{% endblock %}
+
+{% block content %}
+
+<section
+  class="mx-auto max-w-7xl px-5 py-12"
+>
+
+  <div class="max-w-3xl">
+
+    <p
+      class="text-xs font-bold uppercase tracking-[.2em] text-violet-300"
+    >
+      About the project
+    </p>
+
+    <h1
+      class="mt-2 text-4xl font-black"
+    >
+      A clearer research workflow for brain MRI experiments.
+    </h1>
+
+    <p
+      class="mt-5 text-lg leading-8 text-slate-400"
+    >
+      NeuroScan AI is a Bachelor of Engineering capstone
+      interface that pairs deep-learning classification
+      with visual evidence. The product title remains
+      unchanged; the interface now makes the analysis
+      pipeline easier to inspect and present.
+    </p>
+
+  </div>
+
+
+  <div
+    class="mt-10 grid gap-5 md:grid-cols-2"
+  >
+
+    <div
+      class="glass rounded-3xl p-7"
+    >
+
+      <div
+        class="flex items-center gap-3"
+      >
+
+        <span
+          class="grid h-11 w-11 place-items-center rounded-xl bg-violetx/15 text-violet-300"
+        >
+
+          <i
+            class="fa-solid fa-microchip"
+          ></i>
+
+        </span>
+
+        <h2
+          class="text-xl font-black"
+        >
+          Core inference stack
+        </h2>
+
+      </div>
+
+
+      <div
+        class="mt-6 space-y-3 text-sm text-slate-300"
+      >
+
+        <p>
+
+          <strong
+            class="text-violet-300"
+          >
+            Backend:
+          </strong>
+
+          Python, Flask, TensorFlow/Keras,
+          OpenCV, Matplotlib, ReportLab.
+
+        </p>
+
+        <p>
+
+          <strong
+            class="text-cyanx"
+          >
+            Models:
+          </strong>
+
+          VGG16, EfficientNetB0, custom CNN,
+          and ANN adapters with optional
+          weighted soft voting.
+
+        </p>
+
+        <p>
+
+          <strong
+            class="text-emerald-300"
+          >
+            Interface:
+          </strong>
+
+          HTML5, Tailwind CSS, responsive
+          glass-panel layout, accessible
+          status and evidence cards.
+
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="glass rounded-3xl p-7"
+    >
+
+      <div
+        class="flex items-center gap-3"
+      >
+
+        <span
+          class="grid h-11 w-11 place-items-center rounded-xl bg-cyanx/15 text-cyanx"
+        >
+
+          <i
+            class="fa-solid fa-eye"
+          ></i>
+
+        </span>
+
+        <h2
+          class="text-xl font-black"
+        >
+          Explainability modules
+        </h2>
+
+      </div>
+
+
+      <div
+        class="mt-6 grid grid-cols-2 gap-3 text-sm"
+      >
+
+        <div
+          class="rounded-xl border border-line bg-slate-950/30 p-4"
+        >
+
+          <i
+            class="fa-solid fa-fire text-orange-300"
+          ></i>
+
+          <p
+            class="mt-2 font-bold"
+          >
+            Grad-CAM
+          </p>
+
+        </div>
+
+
+        <div
+          class="rounded-xl border border-line bg-slate-950/30 p-4"
+        >
+
+          <i
+            class="fa-solid fa-border-top-left text-cyanx"
+          ></i>
+
+          <p
+            class="mt-2 font-bold"
+          >
+            Boundary estimate
+          </p>
+
+        </div>
+
+
+        <div
+          class="rounded-xl border border-line bg-slate-950/30 p-4"
+        >
+
+          <i
+            class="fa-solid fa-layer-group text-violet-300"
+          ></i>
+
+          <p
+            class="mt-2 font-bold"
+          >
+            Activations
+          </p>
+
+        </div>
+
+
+        <div
+          class="rounded-xl border border-line bg-slate-950/30 p-4"
+        >
+
+          <i
+            class="fa-solid fa-file-pdf text-rose-300"
+          ></i>
+
+          <p
+            class="mt-2 font-bold"
+          >
+            PDF evidence
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div
+    class="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm leading-6 text-amber-100"
+  >
+
+    <i
+      class="fa-solid fa-triangle-exclamation mr-2"
+    ></i>
+
+    NeuroScan AI is a research and educational prototype.
+    Heatmaps and boundary estimates are not clinical segmentation,
+    and model outputs require qualified clinical review.
+
+  </div>
+
+</section>
+
+{% endblock %}

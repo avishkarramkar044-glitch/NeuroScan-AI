@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Symptom Checker — NeuroScan AI{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-3xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Pre-Scan Assessment</p>
+    <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Symptom Checker</h1>
+    <p class="mt-2 text-slate-400">Answer a few questions about your symptoms. This will help determine if you should proceed with MRI analysis.</p>
+  </div>
+
+  {% if result %}
+  <div class="glass rounded-3xl p-6 mb-6" style="border-color: {% if result.level == 'green' %}#10b981{% elif result.level == 'yellow' %}#f59e0b{% elif result.level == 'orange' %}#f97316{% else %}#f43f5e{% endif %}40;">
+    <div class="flex items-center gap-4 mb-4">
+      <span class="grid h-14 w-14 place-items-center rounded-2xl" style="background: {% if result.level == 'green' %}#10b981{% elif result.level == 'yellow' %}#f59e0b{% elif result.level == 'orange' %}#f97316{% else %}#f43f5e{% endif %}20;">
+        <i class="fa-solid {% if result.level == 'green' %}fa-circle-check{% elif result.level == 'red' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %} text-2xl" style="color: {% if result.level == 'green' %}#10b981{% elif result.level == 'yellow' %}#f59e0b{% elif result.level == 'orange' %}#f97316{% else %}#f43f5e{% endif %};"></i>
+      </span>
+      <div>
+        <h2 class="text-xl font-black text-white">Assessment Complete</h2>
+        <p class="mt-1 text-sm text-slate-400">{{ result.message }}</p>
+      </div>
+    </div>
+    <div class="rounded-xl border border-line bg-slate-950/40 px-4 py-3 text-sm font-bold text-cyanx">
+      <i class="fa-solid fa-arrow-right mr-2"></i>{{ result.recommendation }}
+    </div>
+    <div class="mt-5 flex gap-3">
+      <a href="/workspace" class="rounded-xl bg-violetx px-5 py-2.5 font-black text-white shadow-lg shadow-violetx/20 hover:bg-violet-500">
+        <i class="fa-solid fa-brain mr-2"></i>Upload MRI Scan
+      </a>
+      <a href="/symptom-check" class="rounded-xl border border-line bg-slate-950/40 px-5 py-2.5 font-bold text-slate-200">
+        <i class="fa-solid fa-rotate-right mr-2"></i>Retake
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" class="glass rounded-3xl p-6 space-y-4">
+    <p class="font-black text-white mb-4">Select any symptoms you are experiencing:</p>
+    
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="headaches" class="h-5 w-5 rounded" {% if symptoms and symptoms.headaches %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Persistent Headaches</p>
+          <p class="text-xs text-slate-500">Headaches that worsen over time</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="seizures" class="h-5 w-5 rounded" {% if symptoms and symptoms.seizures %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Seizures</p>
+          <p class="text-xs text-slate-500">Any seizure activity</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="vision" class="h-5 w-5 rounded" {% if symptoms and symptoms.vision %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Vision Problems</p>
+          <p class="text-xs text-slate-500">Blurred or double vision</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="nausea" class="h-5 w-5 rounded" {% if symptoms and symptoms.nausea %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Nausea / Vomiting</p>
+          <p class="text-xs text-slate-500">Unexplained nausea</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="memory" class="h-5 w-5 rounded" {% if symptoms and symptoms.memory %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Memory Problems</p>
+          <p class="text-xs text-slate-500">Confusion or memory loss</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="weakness" class="h-5 w-5 rounded" {% if symptoms and symptoms.weakness %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Weakness</p>
+          <p class="text-xs text-slate-500">Weakness in arms or legs</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="personality" class="h-5 w-5 rounded" {% if symptoms and symptoms.personality %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Personality Changes</p>
+          <p class="text-xs text-slate-500">Mood or behavior changes</p>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 rounded-xl border border-line bg-slate-950/30 p-4 cursor-pointer hover:border-cyanx/40 transition">
+        <input type="checkbox" name="balance" class="h-5 w-5 rounded" {% if symptoms and symptoms.balance %}checked{% endif %}>
+        <div>
+          <p class="font-bold text-slate-200">Balance Issues</p>
+          <p class="text-xs text-slate-500">Difficulty walking or balancing</p>
+        </div>
+      </label>
+    </div>
+
+    <button type="submit" class="w-full rounded-xl bg-violetx py-3.5 font-black text-white shadow-xl shadow-violetx/20 hover:bg-violet-500">
+      <i class="fa-solid fa-clipboard-check mr-2"></i>Get Assessment
+    </button>
+  </form>
+
+  <div class="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-xs text-amber-200">
+    <i class="fa-solid fa-circle-info mr-2"></i>
+    This symptom checker is for informational purposes only and is not a medical diagnosis. Always consult a healthcare professional.
+  </div>
+</section>
+{% endblock %}

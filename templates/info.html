@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Medical Information — NeuroScan AI
+{% endblock %}
+
+{% block content %}
+
+<section
+  class="mx-auto max-w-7xl px-5 py-12"
+>
+
+  <div class="mb-8">
+
+    <p
+      class="text-xs font-bold uppercase tracking-[.2em] text-cyanx"
+    >
+      Reference / Target classes
+    </p>
+
+    <h1
+      class="mt-2 text-4xl font-black"
+    >
+      Brain pathology reference
+    </h1>
+
+    <p
+      class="mt-2 max-w-2xl text-slate-400"
+    >
+      A compact educational reference for the
+      four labels used by the classification pipeline.
+    </p>
+
+  </div>
+
+
+  <div
+    class="grid gap-5 md:grid-cols-2 xl:grid-cols-4"
+  >
+
+    {% set cards=[
+      (
+        'glioma_tumor',
+        'Glioma tumor',
+        'Glial-cell tumors that can be infiltrative and heterogeneous on MRI. Imaging interpretation depends on sequence, contrast, and clinical context.',
+        'violet-300'
+      ),
+      (
+        'meningioma_tumor',
+        'Meningioma tumor',
+        'Tumors arising from the meninges. Many are slow-growing, but radiologic appearance and symptoms vary by site and size.',
+        'cyanx'
+      ),
+      (
+        'no_tumor',
+        'No tumor',
+        'The no-tumor class indicates that the image resembles the non-tumor examples used during training. It is not a clinical exclusion.',
+        'emerald-300'
+      ),
+      (
+        'pituitary_tumor',
+        'Pituitary tumor',
+        'Lesions near the pituitary region can affect surrounding anatomy and endocrine function. Dedicated imaging and specialist review may be needed.',
+        'amber-300'
+      )
+    ] %}
+
+
+    {% for slug, title, body, color in cards %}
+
+    <article
+      class="glass rounded-3xl p-6"
+    >
+
+      <div
+        class="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950/50 text-{{ color }}"
+      >
+
+        <i
+          class="fa-solid fa-brain"
+        ></i>
+
+      </div>
+
+      <h2
+        class="mt-5 text-xl font-black"
+      >
+        {{ title }}
+      </h2>
+
+      <p
+        class="mt-3 text-sm leading-6 text-slate-400"
+      >
+        {{ body }}
+      </p>
+
+      <div
+        class="mt-5 border-t border-line pt-4 text-xs text-slate-500"
+      >
+
+        Model label:
+
+        <span
+          class="font-mono text-slate-300"
+        >
+          {{ slug }}
+        </span>
+
+      </div>
+
+    </article>
+
+    {% endfor %}
+
+  </div>
+
+
+  <div
+    class="mt-7 glass rounded-3xl p-7"
+  >
+
+    <h2
+      class="text-xl font-black"
+    >
+      How to read the evidence panel
+    </h2>
+
+
+    <div
+      class="mt-5 grid gap-4 md:grid-cols-3"
+    >
+
+      <div>
+
+        <p
+          class="font-bold text-orange-300"
+        >
+          Heatmap
+        </p>
+
+        <p
+          class="mt-2 text-sm leading-6 text-slate-400"
+        >
+          Shows regions that contribute to the
+          selected model output, not a guaranteed
+          tumor mask.
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <p
+          class="font-bold text-cyanx"
+        >
+          Boundary estimate
+        </p>
+
+        <p
+          class="mt-2 text-sm leading-6 text-slate-400"
+        >
+          An attention-guided contour for visual
+          inspection. It must not be treated as
+          a segmentation ground truth.
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <p
+          class="font-bold text-violet-300"
+        >
+          Confidence
+        </p>
+
+        <p
+          class="mt-2 text-sm leading-6 text-slate-400"
+        >
+          A model score for the selected class.
+          It is not a diagnosis or a calibrated
+          clinical probability.
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Training Pipeline Section -->
+  <div class="mt-10 glass rounded-3xl p-7">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Model Training Pipeline</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Deep Learning Architecture & Training</h2>
+    <p class="mt-2 text-sm text-slate-400">Overview of the training pipeline used to build the NeuroScan AI classification models.</p>
+
+    <div class="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <!-- Step 1: Data Preprocessing -->
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-cyanx/15 text-cyanx font-black">1</span>
+          <p class="font-bold text-white">Data Preprocessing</p>
+        </div>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-300 mt-0.5"></i>Resized all MRI images to 224x224 pixels</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-300 mt-0.5"></i>Normalized pixel values to 0-1 range</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-300 mt-0.5"></i>Applied data augmentation (rotation, flip, zoom)</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-300 mt-0.5"></i>Pickled preprocessed data for reuse</li>
+        </ul>
+      </div>
+
+      <!-- Step 2: Model Architectures -->
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-violetx/15 text-violet-300 font-black">2</span>
+          <p class="font-bold text-white">Model Architectures</p>
+        </div>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li class="flex items-start gap-2"><i class="fa-solid fa-network-wired text-violet-300 mt-0.5"></i><b>VGG16:</b> Transfer learning with ImageNet weights</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-network-wired text-violet-300 mt-0.5"></i><b>EfficientNetB0:</b> Efficient architecture, high accuracy</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-network-wired text-violet-300 mt-0.5"></i><b>Custom Deep CNN:</b> 6-layer CNN with BatchNorm</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-network-wired text-violet-300 mt-0.5"></i><b>ANN:</b> Dense layers for baseline comparison</li>
+        </ul>
+      </div>
+
+      <!-- Step 3: Training Configuration -->
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/15 text-emerald-300 font-black">3</span>
+          <p class="font-bold text-white">Training Config</p>
+        </div>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li class="flex items-start gap-2"><i class="fa-solid fa-cog text-emerald-300 mt-0.5"></i>Optimizer: Adam (lr=0.001)</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-cog text-emerald-300 mt-0.5"></i>Loss: Categorical Crossentropy</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-cog text-emerald-300 mt-0.5"></i>Batch size: 32</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-cog text-emerald-300 mt-0.5"></i>Callbacks: EarlyStopping, ReduceLROnPlateau, TensorBoard</li>
+        </ul>
+      </div>
+
+      <!-- Step 4: Ensemble -->
+      <div class="rounded-2xl border border-line bg-slate-950/40 p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-amber-400/15 text-amber-300 font-black">4</span>
+          <p class="font-bold text-white">Ensemble Learning</p>
+        </div>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li class="flex items-start gap-2"><i class="fa-solid fa-layer-group text-amber-300 mt-0.5"></i><b>EfficientNet:</b> 50% weight</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-layer-group text-amber-300 mt-0.5"></i><b>VGG16:</b> 35% weight</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-layer-group text-amber-300 mt-0.5"></i><b>Custom CNN:</b> 15% weight</li>
+          <li class="flex items-start gap-2"><i class="fa-solid fa-trophy text-emerald-300 mt-0.5"></i>Achieved 99%+ accuracy</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3D Pipeline -->
+    <div class="mt-5 rounded-2xl border border-violetx/20 bg-violetx/5 p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <i class="fa-solid fa-cube text-violet-300 text-xl"></i>
+        <p class="font-bold text-white">3D Volumetric Pipeline</p>
+      </div>
+      <p class="text-sm text-slate-400">In addition to the 2D pipeline, a 3D volumetric pipeline was trained using Conv3D architectures on the RSNA-MICCAI dataset for MGMT biomarker prediction. The 3D models process complete brain volumes (64 slices) instead of single 2D slices.</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="rounded-full bg-slate-950/40 px-3 py-1 text-xs font-bold text-violet-300">VGG16 3D</span>
+        <span class="rounded-full bg-slate-950/40 px-3 py-1 text-xs font-bold text-violet-300">EfficientNet 3D</span>
+        <span class="rounded-full bg-slate-950/40 px-3 py-1 text-xs font-bold text-violet-300">Deep CNN 3D</span>
+        <span class="rounded-full bg-slate-950/40 px-3 py-1 text-xs font-bold text-violet-300">ANN 3D</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Segmentation Showcase Section -->
+  <div class="mt-10 glass rounded-3xl p-7">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Tumor Segmentation Showcase</p>
+    <h2 class="mt-2 text-2xl font-black text-white">Mask R-CNN Segmentation Model</h2>
+    <p class="mt-2 text-sm text-slate-400">A separate Mask R-CNN model was trained for instance segmentation of brain tumors. This model detects tumors and generates precise pixel-level masks with bounding boxes.</p>
+
+    <div class="mt-6 grid gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/40 p-4">
+        <p class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-3">Input MRI Scan</p>
+        <img src="{{ url_for('static', filename='segmentation_input.jpg') }}" 
+             onerror="this.onerror=null;this.src='/Segmentation/nt1.jpg'"
+             class="w-full rounded-xl object-contain" alt="Input MRI" style="max-height:300px">
+        <p class="mt-2 text-xs text-slate-500">Original MRI scan before segmentation</p>
+      </div>
+
+      <div class="rounded-2xl border border-emerald-400/20 bg-slate-950/40 p-4">
+        <p class="text-xs font-bold uppercase tracking-wider text-cyanx mb-3">Mask R-CNN Output</p>
+        <img src="{{ url_for('static', filename='segmentation_masked.jpg') }}" 
+             onerror="this.onerror=null;this.src='/Segmentation/masked_image.jpg'"
+             class="w-full rounded-xl object-contain" alt="Segmented tumor" style="max-height:300px">
+        <p class="mt-2 text-xs text-slate-500">Tumor detected with bounding box and pixel-level mask</p>
+      </div>
+    </div>
+
+    <div class="mt-5 grid gap-4 md:grid-cols-3">
+      <div class="rounded-xl border border-line bg-slate-950/30 p-4">
+        <i class="fa-solid fa-vector-square text-cyanx"></i>
+        <p class="mt-2 font-bold text-white text-sm">Instance Segmentation</p>
+        <p class="mt-1 text-xs text-slate-500">Mask R-CNN generates both bounding boxes and pixel-level masks for each detected tumor.</p>
+      </div>
+      <div class="rounded-xl border border-line bg-slate-950/30 p-4">
+        <i class="fa-solid fa-bullseye text-emerald-300"></i>
+        <p class="mt-2 font-bold text-white text-sm">85% Confidence Threshold</p>
+        <p class="mt-1 text-xs text-slate-500">Only detections with confidence above 85% are shown, reducing false positives.</p>
+      </div>
+      <div class="rounded-xl border border-line bg-slate-950/30 p-4">
+        <i class="fa-solid fa-database text-violet-300"></i>
+        <p class="mt-2 font-bold text-white text-sm">Custom Training</p>
+        <p class="mt-1 text-xs text-slate-500">Trained on annotated brain tumor dataset with custom Mask R-CNN configuration.</p>
+      </div>
+    </div>
+
+    <div class="mt-5 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-xs text-amber-200">
+      <i class="fa-solid fa-circle-info mr-2"></i>
+      The Mask R-CNN segmentation model was trained in Google Colab using TensorFlow 1.x. The live web app uses AI Attention Analysis (Grad-CAM + Saliency) for real-time tumor localization, which is compatible with TensorFlow 2.x.
+    </div>
+  </div>
+
+</section>
+
+{% endblock %}

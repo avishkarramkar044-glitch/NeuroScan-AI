@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}NeuroScan AI{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#08111f',
+            panel: '#101d32',
+            line: '#22314b',
+            cyanx: '#59e5ef',
+            violetx: '#8b7cff'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at 20% 0%, #17284a 0, #08111f 34rem), #08111f;
+    }
+    .glass {
+      background: rgba(16,29,50,.78);
+      border: 1px solid rgba(100,125,170,.24);
+      box-shadow: 0 18px 50px rgba(0,0,0,.18);
+      backdrop-filter: blur(16px);
+    }
+    .grid-bg {
+      background-image: linear-gradient(rgba(117,145,190,.07) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(117,145,190,.07) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .nav-link { color:#94a3b8; transition:.2s; }
+    .nav-link:hover, .nav-active { color:#fff; }
+    .nav-active { border-bottom: 2px solid #8b7cff; padding-bottom: 6px; }
+    .lang-btn { transition: .2s; }
+    .lang-btn.active { background: #8b7cff; color: #fff; }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-100">
+
+<header class="sticky top-0 z-50 border-b border-slate-800/80 bg-ink/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+    <a href="/" class="flex items-center gap-3">
+      <span class="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violetx to-cyanx text-ink shadow-lg shadow-violetx/20">
+        <i class="fa-solid fa-brain text-xl"></i>
+      </span>
+      <span class="text-xl font-black tracking-tight text-white">NeuroScan <span class="text-cyanx">AI</span></span>
+    </a>
+    <nav class="hidden items-center gap-5 text-sm font-semibold md:flex">
+      <a class="nav-link {% if request.path == '/' %}nav-active{% endif %}" href="/">Home</a>
+      <a class="nav-link {% if request.path == '/workspace' %}nav-active{% endif %}" href="/workspace">Workspace</a>
+      <a class="nav-link {% if request.path == '/batch' %}nav-active{% endif %}" href="/batch">Batch</a>
+      <a class="nav-link {% if request.path == '/compare' %}nav-active{% endif %}" href="/compare">Compare</a>
+      <a class="nav-link {% if request.path == '/patients' %}nav-active{% endif %}" href="/patients">Patients</a>
+      <a class="nav-link {% if request.path == '/symptom-check' %}nav-active{% endif %}" href="/symptom-check">Symptoms</a>
+      <a class="nav-link {% if request.path == '/dataset' %}nav-active{% endif %}" href="/dataset">Dataset</a>
+      <a class="nav-link {% if request.path == '/info' %}nav-active{% endif %}" href="/info">Information</a>
+      <a class="nav-link {% if request.path == '/analytics' %}nav-active{% endif %}" href="/analytics">Analytics</a>
+      <a class="nav-link {% if request.path == '/faq' %}nav-active{% endif %}" href="/faq">FAQ</a>
+      <a class="nav-link {% if request.path == '/about' %}nav-active{% endif %}" href="/about">About</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <div class="hidden items-center rounded-xl border border-line bg-slate-950/40 p-1 sm:flex">
+        <button onclick="setLang('en')" id="lang-en" class="lang-btn active rounded-lg px-3 py-1 text-xs font-bold">EN</button>
+        <button onclick="setLang('hi')" id="lang-hi" class="lang-btn rounded-lg px-3 py-1 text-xs font-bold text-slate-400">HI</button>
+        <button onclick="setLang('mr')" id="lang-mr" class="lang-btn rounded-lg px-3 py-1 text-xs font-bold text-slate-400">MR</button>
+      </div>
+      <a href="/workspace" class="hidden rounded-xl bg-violetx px-4 py-2 text-sm font-bold text-white shadow-lg shadow-violetx/20 transition hover:bg-violet-500 sm:block">Launch</a>
+    </div>
+  </div>
+</header>
+
+<main class="grid-bg min-h-[calc(100vh-76px)]">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-slate-800/80 bg-ink/80 px-5 py-7 text-center text-xs text-slate-500">
+  NeuroScan AI Diagnostic System &middot; Explainable research prototype
+</footer>
+
+<script>
+function setLang(lang) {
+  localStorage.setItem('neuroscan_lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active', 'text-white');
+    btn.classList.add('text-slate-400');
+  });
+  const activeBtn = document.getElementById('lang-' + lang);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'text-white');
+    activeBtn.classList.remove('text-slate-400');
+  }
+  document.querySelectorAll('input[name="lang"]').forEach(input => {
+    input.value = lang;
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const savedLang = localStorage.getItem('neuroscan_lang') || 'en';
+  setLang(savedLang);
+});
+</script>
+
+</body>
+</html>

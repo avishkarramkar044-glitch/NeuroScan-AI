@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Model Comparison — NeuroScan AI{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-7xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Deep Model Analysis</p>
+    <h1 class="mt-2 text-4xl font-black text-white">Model Comparison Tool</h1>
+    <p class="mt-2 text-slate-400">Upload one MRI image and see how all 4 models analyze it side by side. Compare predictions, confidence, and Eigen-CAM heatmaps.</p>
+  </div>
+
+  {% if error %}
+  <div class="mb-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200"><i class="fa-solid fa-circle-exclamation mr-2"></i>{{ error }}</div>
+  {% endif %}
+
+  {% if not results %}
+  <form action="/compare/run" method="POST" enctype="multipart/form-data" class="glass rounded-3xl p-8">
+    <label class="relative block cursor-pointer rounded-2xl border-2 border-dashed border-line bg-slate-950/30 px-5 py-10 text-center transition hover:border-cyanx/60">
+      <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp" required class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+      <i class="fa-solid fa-image text-4xl text-violet-300"></i>
+      <p class="mt-4 font-bold text-slate-200">Choose an MRI image</p>
+      <p class="mt-1 text-xs text-slate-500">All models will analyze the same image</p>
+    </label>
+    <button type="submit" class="mt-5 w-full rounded-xl bg-violetx py-3.5 font-black text-white shadow-xl shadow-violetx/20 hover:bg-violet-500"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Compare All Models</button>
+  </form>
+  {% else %}
+
+  <!-- Consensus Summary -->
+  {% set ns = namespace(all_same=true) %}
+  {% set first_pred = results[0].prediction if results else '' %}
+  {% for r in results %}{% if r.prediction != first_pred %}{% set ns.all_same = false %}{% endif %}{% endfor %}
+  
+  <div class="glass rounded-3xl p-6 mb-6" style="{% if ns.all_same %}border-color: rgba(16,185,129,0.4);{% else %}border-color: rgba(245,158,11,0.4);{% endif %}">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <span class="grid h-14 w-14 place-items-center rounded-2xl {% if ns.all_same %}bg-emerald-400/15{% else %}bg-amber-400/15{% endif %}">
+          <i class="fa-solid {% if ns.all_same %}fa-circle-check text-emerald-300{% else %}fa-circle-exclamation text-amber-300{% endif %} text-2xl"></i>
+        </span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[.2em] text-slate-400">Consensus Analysis</p>
+          {% if ns.all_same %}
+          <h2 class="mt-1 text-2xl font-black text-emerald-300">Full Agreement — {{ first_pred }}</h2>
+          <p class="mt-1 text-sm text-slate-400">All {{ results|length }} models agree on this prediction</p>
+          {% else %}
+          <h2 class="mt-1 text-2xl font-black text-amber-300">Mixed Predictions</h2>
+          <p class="mt-1 text-sm text-slate-400">Models disagree on the classification</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <div class="rounded-xl border border-line bg-slate-950/40 px-5 py-3 text-center">
+          <p class="text-xs text-slate-500">Models</p>
+          <p class="text-2xl font-black text-cyanx">{{ results|length }}</p>
+        </div>
+        <div class="rounded-xl border border-line bg-slate-950/40 px-5 py-3 text-center">
+          <p class="text-xs text-slate-500">Avg Confidence</p>
+          {% set total_conf = 0 %}{% for r in results %}{% set total_conf = total_conf + r.confidence %}{% endfor %}
+          <p class="text-2xl font-black text-emerald-300">{{ (total_conf / results|length)|round(1) }}%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if image_path %}
+  <div class="glass rounded-3xl p-6 mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-violet-300">Input Image</p>
+        <h3 class="mt-1 text-lg font-black text-white">MRI Scan Under Analysis</h3>
+      </div>
+      <span class="rounded-full bg-violet-400/10 px-3 py-1 text-xs font-bold text-violet-200">Reference Image</span>
+    </div>
+    <div class="rounded-2xl border border-line bg-slate-950/40 p-4">
+      <img src="{{ image_path }}" class="max-h-80 mx-auto rounded-xl object-contain" alt="Input MRI">
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Model Results Grid -->
+  <div class="grid gap-5 md:grid-cols-2">
+    {% for r in results %}
+    <div class="glass rounded-3xl overflow-hidden" style="border-color: {% if r.confidence >= 90 %}rgba(16,185,129,0.3){% elif r.confidence >= 70 %}rgba(245,158,11,0.3){% else %}rgba(100,116,139,0.3){% endif %};">
+      <div class="border-b border-line px-5 py-4" style="background: {% if r.confidence >= 90 %}rgba(16,185,129,0.05){% elif r.confidence >= 70 %}rgba(245,158,11,0.05){% else %}rgba(100,116,139,0.05){% endif %}">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-black text-white text-lg">{{ r.model_name }}</p>
+            <p class="text-xs text-slate-500">{{ r.model_key }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-3xl font-black {% if r.confidence >= 90 %}text-emerald-300{% elif r.confidence >= 70 %}text-amber-300{% else %}text-slate-400{% endif %}">{{ r.confidence }}%</p>
+          </div>
+        </div>
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+          <div class="h-full rounded-full {% if r.confidence >= 90 %}bg-emerald-400{% elif r.confidence >= 70 %}bg-amber-400{% else %}bg-slate-500{% endif %}" style="width:{{ r.confidence }}%"></div>
+        </div>
+      </div>
+      
+      <div class="px-5 py-3 border-b border-line">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-brain text-cyanx"></i>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Prediction</span>
+          </div>
+          <span class="rounded-full {% if 'No Tumor' in r.prediction %}bg-emerald-400/10 text-emerald-300{% else %}bg-rose-400/10 text-rose-300{% endif %} px-3 py-1 text-sm font-black">{{ r.prediction }}</span>
+        </div>
+      </div>
+
+      {% if r.gradcam %}
+      <div class="p-4">
+        <div class="rounded-xl border border-orange-400/20 bg-slate-950/40 p-3">
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fa-solid fa-wave-square text-orange-300"></i>
+            <p class="text-xs font-bold uppercase tracking-wider text-orange-300">Eigen-CAM Heatmap</p>
+          </div>
+          <div class="explainability-viewer relative cursor-pointer overflow-hidden rounded-lg" data-image="{{ r.gradcam }}" data-title="{{ r.model_name }} - Eigen-CAM">
+            <img src="{{ r.gradcam }}" class="w-full rounded-lg object-contain" alt="Eigen-CAM {{ r.model_name }}">
+          </div>
+          {% if r.heatmap %}
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <div class="rounded-lg border border-rose-400/20 bg-slate-950/30 p-2">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-rose-300 mb-1">Heatmap</p>
+              <div class="explainability-viewer relative cursor-pointer" data-image="{{ r.heatmap }}" data-title="{{ r.model_name }} - Heatmap">
+                <img src="{{ r.heatmap }}" class="w-full rounded object-contain" alt="Heatmap" style="max-height:100px">
+              </div>
+            </div>
+            <div class="rounded-lg border border-cyanx/20 bg-slate-950/30 p-2">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-cyanx mb-1">Overlay</p>
+              <div class="explainability-viewer relative cursor-pointer" data-image="{{ r.gradcam }}" data-title="{{ r.model_name }} - Overlay">
+                <img src="{{ r.gradcam }}" class="w-full rounded object-contain" alt="Overlay" style="max-height:100px">
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="p-4">
+        <div class="rounded-xl border border-line bg-slate-950/20 p-6 text-center">
+          <i class="fa-solid fa-image-slash text-2xl text-slate-600"></i>
+          <p class="mt-2 text-xs text-slate-500">No map available</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  
+  <div class="mt-6 glass rounded-3xl p-6">
+    <div class="flex items-start gap-4">
+      <span class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-cyanx/15 text-cyanx">
+        <i class="fa-solid fa-circle-info"></i>
+      </span>
+      <div>
+        <h3 class="font-black text-white">Clinical Interpretation</h3>
+        <p class="mt-2 text-sm leading-6 text-slate-400">
+          Each model uses a different architecture to analyze the same MRI scan. 
+          The Eigen-CAM Heatmaps show which brain regions are most important for each model's prediction — 
+          red/yellow areas indicate regions where blocking caused the biggest drop in confidence (most important for the prediction).
+        </p>
+        <p class="mt-3 text-xs text-amber-200">
+          <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+          These maps show AI model sensitivity, not ground-truth tumor boundaries. This is a research prototype, not a medical diagnosis.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 text-center">
+    <a href="/compare" class="rounded-xl bg-violetx px-6 py-3 font-black text-white shadow-xl shadow-violetx/20 hover:bg-violet-500">
+      <i class="fa-solid fa-rotate-right mr-2"></i>Compare Another Image
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+<div id="image-modal" class="fixed inset-0 z-[9999] hidden bg-black/90 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+  <div class="flex h-full w-full flex-col">
+    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Explainability Viewer</p>
+        <h3 id="modal-title" class="mt-1 text-lg font-black text-white">Image</h3>
+      </div>
+      <button id="close-image-modal" type="button" class="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/5 text-white" aria-label="Close">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+    <div class="flex flex-1 items-center justify-center overflow-auto py-6">
+      <img id="modal-image" src="" alt="Expanded image" class="max-h-full max-w-full rounded-2xl object-contain shadow-2xl">
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.explainability-viewer').forEach(function(el) {
+  el.addEventListener('click', function() {
+    var src = el.getAttribute('data-image');
+    var title = el.getAttribute('data-title') || 'Image';
+    if (src) {
+      document.getElementById('modal-image').src = src;
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('image-modal').classList.remove('hidden');
+    }
+  });
+});
+
+document.getElementById('close-image-modal').addEventListener('click', function() {
+  document.getElementById('image-modal').classList.add('hidden');
+  document.getElementById('modal-image').src = '';
+});
+
+document.getElementById('image-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    this.classList.add('hidden');
+    document.getElementById('modal-image').src = '';
+  }
+});
+</script>
+{% endblock %}

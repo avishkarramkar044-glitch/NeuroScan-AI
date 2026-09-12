@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}FAQ — NeuroScan AI{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-4xl px-5 py-10">
+  <div class="mb-8">
+    <p class="text-xs font-bold uppercase tracking-[.2em] text-cyanx">Help & Information</p>
+    <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Frequently Asked Questions</h1>
+    <p class="mt-2 text-slate-400">Everything you need to know about NeuroScan AI, MRI scans, and how to use your results.</p>
+  </div>
+
+  <div class="space-y-4">
+    {% for item in faq_items %}
+    <div class="glass rounded-2xl p-5">
+      <div class="flex items-start gap-4">
+        <span class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-violetx/15 text-violet-300">
+          <i class="fa-solid fa-question"></i>
+        </span>
+        <div>
+          <h3 class="font-black text-white">{{ item.q }}</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-400">{{ item.a }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm text-amber-100">
+    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+    <strong>Still have questions?</strong> NeuroScan AI is a research prototype. For medical concerns, always consult a licensed healthcare professional.
+  </div>
+
+  <div class="mt-6 text-center">
+    <a href="/workspace" class="rounded-xl bg-violetx px-6 py-3 font-black text-white shadow-xl shadow-violetx/20 transition hover:bg-violet-500">
+      <i class="fa-solid fa-brain mr-2"></i>Go to Workspace
+    </a>
+  </div>
+</section>
+{% endblock %}

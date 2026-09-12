@@ -18,6 +18,14 @@ training/
 testing/
 dataset/
 datasets/
+Brain-Tumor-Classification-DataSet/
+test_set/
+
+# Dataset ZIP files
+*.zip
+
+# Pickled datasets
+*.pickle
 
 # Uploaded/generated images
 static/uploads/
@@ -25,10 +33,18 @@ static/results/
 uploads/
 results/
 
-# TensorFlow/Keras temporary files
+# TensorFlow/Keras model files
 *.h5
 *.keras
 *.weights.h5
+
+# Databases
+*.db
+
+# Generated JSON/history files
+prediction_history.json
+training_history.json
+training_history_3d.json
 
 # IDE
 .vscode/
@@ -40,3 +56,29 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated reports/documents
+Report.pdf
+Research Paper.pdf
+Latex.zip
+
+# Project metadata/private files
+BE Project MetaData.xlsx
+# Generated NeuroScan AI outputs
+static/reports/
+static/evaluation/
+static/feature_maps/
+static/gradcam/
+static/performance_plots/
+static/segmentation/
+static/unet_results/
+static/audio/
+static/uploads/
+static/reports/
+static/evaluation/
+static/feature_maps/
+static/gradcam/
+static/performance_plots/
+static/segmentation/
+static/unet_results/
+static/audio/

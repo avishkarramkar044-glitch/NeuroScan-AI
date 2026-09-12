@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}
+NeuroScan AI — Next-Gen Brain Diagnostics
+{% endblock %}
+
+{% block content %}
+
+<section
+  class="mx-auto max-w-7xl px-5 py-16 lg:py-24"
+>
+
+  <div
+    class="grid items-center gap-12 lg:grid-cols-[1.1fr_.9fr]"
+  >
+
+    <div>
+
+      <div
+        class="mb-6 inline-flex items-center gap-2 rounded-full border border-cyanx/20 bg-cyanx/10 px-4 py-2 text-xs font-bold uppercase tracking-[.18em] text-cyanx"
+      >
+
+        <i class="fa-solid fa-sparkles"></i>
+
+        Explainable MRI intelligence
+
+      </div>
+
+      <h1
+        class="max-w-3xl text-5xl font-black leading-[1.04] tracking-tight text-white md:text-7xl"
+      >
+
+        See the prediction.
+
+        <span
+          class="bg-gradient-to-r from-violetx via-cyanx to-emerald-300 bg-clip-text text-transparent"
+        >
+          Understand the evidence.
+        </span>
+
+      </h1>
+
+      <p
+        class="mt-7 max-w-2xl text-lg leading-8 text-slate-400"
+      >
+        NeuroScan AI combines multi-model classification with
+        attention heatmaps, convolutional activations,
+        lesion-boundary estimates, training convergence,
+        audio narration, and an evidence-rich PDF report.
+      </p>
+
+      <div
+        class="mt-9 flex flex-wrap gap-4"
+      >
+
+        <a
+          href="/workspace"
+          class="rounded-xl bg-violetx px-6 py-3.5 font-bold text-white shadow-xl shadow-violetx/20 transition hover:-translate-y-0.5 hover:bg-violet-500"
+        >
+
+          <i
+            class="fa-solid fa-microscope mr-2"
+          ></i>
+
+          Open diagnostic workspace
+
+        </a>
+
+        <a
+          href="/dataset"
+          class="rounded-xl border border-line bg-panel/70 px-6 py-3.5 font-bold text-slate-200 transition hover:border-cyanx/50"
+        >
+
+          <i
+            class="fa-solid fa-database mr-2 text-cyanx"
+          ></i>
+
+          View Dataset Statistics
+
+        </a>
+
+      </div>
+
+      <div
+        class="mt-12 grid max-w-2xl grid-cols-2 gap-4 md:grid-cols-4"
+      >
+
+        <div class="glass rounded-2xl p-4">
+
+          <p class="text-2xl font-black text-white">
+            4
+          </p>
+
+          <p class="mt-1 text-xs text-slate-400">
+            Target classes
+          </p>
+
+        </div>
+
+        <div class="glass rounded-2xl p-4">
+
+          <p class="text-2xl font-black text-white">
+            3
+          </p>
+
+          <p class="mt-1 text-xs text-slate-400">
+            Explainability views
+          </p>
+
+        </div>
+
+        <div class="glass rounded-2xl p-4">
+
+          <p class="text-2xl font-black text-white">
+            PDF
+          </p>
+
+          <p class="mt-1 text-xs text-slate-400">
+            Exportable evidence
+          </p>
+
+        </div>
+
+        <div class="glass rounded-2xl p-4">
+
+          <p class="text-2xl font-black text-white">
+            AI
+          </p>
+
+          <p class="mt-1 text-xs text-slate-400">
+            Research workflow
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div
+      class="glass relative overflow-hidden rounded-[2rem] p-5"
+    >
+
+      <div
+        class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-violetx/20 blur-3xl"
+      ></div>
+
+      <div
+        class="relative rounded-3xl border border-cyanx/20 bg-[#0b1629] p-5"
+      >
+
+        <div
+          class="flex items-center justify-between"
+        >
+
+          <div>
+
+            <p
+              class="text-xs uppercase tracking-[.2em] text-cyanx"
+            >
+              Live evidence panel
+            </p>
+
+            <p
+              class="mt-1 text-lg font-black"
+            >
+              Attention-aware workflow
+            </p>
+
+          </div>
+
+          <span
+            class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300"
+          >
+            READY
+          </span>
+
+        </div>
+
+        <div
+          class="mt-5 grid gap-3 sm:grid-cols-2"
+        >
+
+          <div
+            class="rounded-2xl border border-line bg-slate-950/40 p-4"
+          >
+
+            <i
+              class="fa-solid fa-fire-flame-curved text-xl text-orange-300"
+            ></i>
+
+            <p class="mt-3 font-bold">
+              Grad-CAM heatmap
+            </p>
+
+            <p class="mt-1 text-xs text-slate-500">
+              Where the model focused
+            </p>
+
+          </div>
+
+          <div
+            class="rounded-2xl border border-line bg-slate-950/40 p-4"
+          >
+
+            <i
+              class="fa-solid fa-vector-square text-xl text-cyanx"
+            ></i>
+
+            <p class="mt-3 font-bold">
+              Lesion boundary
+            </p>
+
+            <p class="mt-1 text-xs text-slate-500">
+              Attention-guided estimate
+            </p>
+
+          </div>
+
+          <div
+            class="rounded-2xl border border-line bg-slate-950/40 p-4"
+          >
+
+            <i
+              class="fa-solid fa-layer-group text-xl text-violet-300"
+            ></i>
+
+            <p class="mt-3 font-bold">
+              Feature activations
+            </p>
+
+            <p class="mt-1 text-xs text-slate-500">
+              Shallow to deep layers
+            </p>
+
+          </div>
+
+          <div
+            class="rounded-2xl border border-line bg-slate-950/40 p-4"
+          >
+
+            <i
+              class="fa-solid fa-file-pdf text-xl text-rose-300"
+            ></i>
+
+            <p class="mt-3 font-bold">
+              Evidence report
+            </p>
+
+            <p class="mt-1 text-xs text-slate-500">
+              Images and probabilities
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+{% endblock %}
